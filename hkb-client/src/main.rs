@@ -28,6 +28,7 @@ fn main() -> RenderResult {
     let mut should_quit = false;
 
     terminal.clear()?;
+    let mut buffer = String::with_capacity(128);
 
     while !should_quit {
         while event::poll(Duration::ZERO).unwrap() {
@@ -37,6 +38,8 @@ fn main() -> RenderResult {
                         if c == 'c' && event.modifiers.contains(event::KeyModifiers::CONTROL) {
                             should_quit = true;
                         }
+
+                        buffer.push(c);
                     }
                     _ => {}
                 },
@@ -46,7 +49,7 @@ fn main() -> RenderResult {
 
         terminal.draw(|frame| {
             let area = frame.size();
-            frame.render_widget(Paragraph::new("Hello holy moly!").black().on_white(), area);
+            frame.render_widget(Paragraph::new(buffer.as_str()).black().on_white(), area);
         })?;
 
         std::thread::sleep(Duration::from_millis(16)); // 60 FPS = 16 millis sleep
