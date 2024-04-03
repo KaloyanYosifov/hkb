@@ -1,5 +1,8 @@
+use crossterm::event::{self, Event, KeyCode};
 use ratatui::prelude::{Constraint, Direction, Frame, Layout};
 use ratatui::widgets::{Block, Borders};
+
+use crate::EventHandler;
 
 pub struct MainApp {}
 
@@ -10,7 +13,24 @@ impl MainApp {
 }
 
 impl MainApp {
-    pub fn render(&mut self, frame: &mut Frame) {
+    pub fn render(&mut self, frame: &mut Frame, event_handler: &mut EventHandler) -> bool {
+        let events = event_handler.all();
+        let mut events_iter = events.iter();
+
+        while let Some(event) = events_iter.next() {
+            match event {
+                Event::Key(event) => match event.code {
+                    KeyCode::Char(c) => {
+                        if c == 'c' && event.modifiers.contains(event::KeyModifiers::CONTROL) {
+                            return true;
+                        }
+                    }
+                    _ => {}
+                },
+                _ => {}
+            }
+        }
+
         let main_layout = Layout::new(
             Direction::Vertical,
             [
@@ -42,5 +62,7 @@ impl MainApp {
             Block::default().borders(Borders::ALL).title("Right"),
             inner_layout[1],
         );
+
+        false
     }
 }
