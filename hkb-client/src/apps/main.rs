@@ -2,13 +2,18 @@ use crossterm::event::{self, Event, KeyCode};
 use ratatui::prelude::{Constraint, Direction, Frame, Layout};
 use ratatui::widgets::{Block, Borders};
 
+use crate::components::input::Input;
 use crate::events::EventHandler;
 
-pub struct MainApp {}
+pub struct MainApp {
+    input: Input,
+}
 
 impl MainApp {
     pub fn new() -> Self {
-        Self {}
+        Self {
+            input: Input::new(),
+        }
     }
 }
 
@@ -56,10 +61,7 @@ impl MainApp {
             Block::default().borders(Borders::ALL).title("Left"),
             inner_layout[0],
         );
-        frame.render_widget(
-            Block::default().borders(Borders::ALL).title("Right"),
-            inner_layout[1],
-        );
+        self.input.render(frame, inner_layout[1], event_handler);
 
         false
     }

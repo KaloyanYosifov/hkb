@@ -3,6 +3,7 @@ use std::{io::Error as IOError, time::Duration};
 use thiserror::Error as ThisError;
 
 mod apps;
+mod components;
 mod events;
 mod terminal;
 
