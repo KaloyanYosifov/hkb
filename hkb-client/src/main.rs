@@ -1,9 +1,9 @@
-use crossterm::event::{self, Event, KeyCode};
-use ratatui::{prelude::*, widgets::*};
+use crossterm::event;
 use std::{io::Error as IOError, time::Duration};
 use thiserror::Error as ThisError;
 
 mod apps;
+mod events;
 mod terminal;
 
 #[derive(ThisError, Debug)]
@@ -16,53 +16,11 @@ pub enum RendererError {
 
 type RenderResult = Result<(), RendererError>;
 
-struct EventHandler {
-    events: Vec<Event>,
-}
-
-impl EventHandler {
-    fn new() -> Self {
-        Self {
-            // 10 is a random initial number here. We shouldn't be getting more than 10 events in one loop
-            events: Vec::with_capacity(10),
-        }
-    }
-}
-
-impl EventHandler {
-    fn all(&self) -> Vec<&Event> {
-        self.events.iter().collect()
-    }
-
-    fn push(&mut self, event: Event) {
-        self.events.push(event);
-    }
-
-    fn consume(&mut self, index: usize) {
-        if self.events.get(index).is_none() {
-            return;
-        }
-
-        self.events = self
-            .events
-            .iter()
-            .enumerate()
-            .filter(|&(i, _)| i != index)
-            .map(|(_, el)| el)
-            .cloned()
-            .collect();
-    }
-
-    fn clear(&mut self) {
-        self.events.clear();
-    }
-}
-
 fn main() -> RenderResult {
     let mut terminal = terminal::init()?;
     let mut should_quit = false;
     let mut main_app = apps::main::MainApp::new();
-    let mut event_handler = EventHandler::new();
+    let mut event_handler = events::EventHandler::new();
 
     terminal.clear()?;
 
