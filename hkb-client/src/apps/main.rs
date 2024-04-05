@@ -3,7 +3,7 @@ use ratatui::prelude::{Constraint, Direction, Frame, Layout};
 use ratatui::widgets::{Block, Borders};
 
 use crate::components::input::Input;
-use crate::events::EventHandler;
+use crate::events;
 
 pub struct MainApp {
     input: Input,
@@ -18,8 +18,8 @@ impl MainApp {
 }
 
 impl MainApp {
-    pub fn render(&mut self, frame: &mut Frame, event_handler: &mut EventHandler) -> bool {
-        let should_quit_events = event_handler.consume_if(|event| match event {
+    pub fn render(&mut self, frame: &mut Frame) -> bool {
+        let should_quit_events = events::consume_if(|event| match event {
             Event::Key(event) => match event.code {
                 KeyCode::Char(c) => {
                     c == 'c' && event.modifiers.contains(event::KeyModifiers::CONTROL)
@@ -61,7 +61,7 @@ impl MainApp {
             Block::default().borders(Borders::ALL).title("Left"),
             inner_layout[0],
         );
-        self.input.render(frame, inner_layout[1], event_handler);
+        self.input.render(frame, inner_layout[1]);
 
         false
     }

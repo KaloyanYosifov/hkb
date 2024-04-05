@@ -124,6 +124,7 @@ name = "hkb-client"
 version = "0.1.0"
 dependencies = [
  "crossterm",
+ "parking_lot",
  "ratatui",
  "thiserror",
 ]

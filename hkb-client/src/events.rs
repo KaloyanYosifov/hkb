@@ -1,10 +1,19 @@
 use crossterm::event::Event;
+use parking_lot::{MappedMutexGuard, Mutex, MutexGuard};
+
+static GLOBAL_EVENT_HANDLER: Mutex<Option<EventHandler>> = parking_lot::const_mutex(None);
 
 pub struct EventHandler {
     events: Vec<Event>,
 }
 
 impl EventHandler {
+    fn get_global_handler() -> MappedMutexGuard<'static, Self> {
+        MutexGuard::map(GLOBAL_EVENT_HANDLER.lock(), |reader| {
+            reader.get_or_insert_with(Self::new)
+        })
+    }
+
     pub fn new() -> Self {
         Self {
             // 10 is a random initial number here. We shouldn't be getting more than 10 events in one loop
@@ -51,4 +60,20 @@ impl EventHandler {
     pub fn clear(&mut self) {
         self.events.clear();
     }
+}
+
+pub fn push(event: Event) {
+    EventHandler::get_global_handler().push(event)
+}
+
+pub fn consume_if<T: Fn(&Event) -> bool>(callback: T) -> Vec<Event> {
+    EventHandler::get_global_handler().consume_if(callback)
+}
+
+pub fn consume(index: usize) -> Option<Event> {
+    EventHandler::get_global_handler().consume(index)
+}
+
+pub fn clear() {
+    EventHandler::get_global_handler().clear()
 }

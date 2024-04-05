@@ -1,7 +1,7 @@
 use crossterm::event::{Event, KeyCode};
-use ratatui::{buffer, prelude::Rect, widgets::Paragraph, Frame};
+use ratatui::{prelude::Rect, widgets::Paragraph, Frame};
 
-use crate::events::EventHandler;
+use crate::events;
 
 pub struct Input {
     buffer: String,
@@ -16,8 +16,8 @@ impl Input {
 }
 
 impl Input {
-    pub fn render(&mut self, frame: &mut Frame, area: Rect, event_handler: &mut EventHandler) {
-        let key_pressed_events = event_handler.consume_if(|event| match event {
+    pub fn render(&mut self, frame: &mut Frame, area: Rect) {
+        let key_pressed_events = events::consume_if(|event| match event {
             Event::Key(event) => match event.code {
                 KeyCode::Char(_) | KeyCode::Backspace => true,
                 _ => false,
