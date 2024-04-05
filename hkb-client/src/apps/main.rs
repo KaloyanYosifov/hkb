@@ -61,7 +61,11 @@ impl MainApp {
             Block::default().borders(Borders::ALL).title("Left"),
             inner_layout[0],
         );
-        self.input.render(frame, inner_layout[1]);
+
+        let right_block = &Block::default().borders(Borders::ALL).title("Right");
+        frame.render_widget(right_block, inner_layout[1]);
+
+        self.input.render(frame, right_block.inner(inner_layout[1]));
 
         false
     }
