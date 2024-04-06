@@ -25,6 +25,9 @@ impl<'a> FocusHandler<'a> {
 
 impl<'a> FocusHandler<'a> {
     pub fn add(&mut self, element: Rc<RefCell<impl Focusable + 'a>>) {
+        if self.elements.len() == 0 {
+            (*element.borrow_mut()).focus();
+        }
         self.elements.push(element);
     }
 

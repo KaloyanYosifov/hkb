@@ -1,5 +1,3 @@
-use std::cell::RefCell;
-
 use crossterm::event::{Event, KeyCode};
 use ratatui::{prelude::Rect, widgets::Paragraph, Frame};
 
@@ -65,7 +63,7 @@ impl Input {
                         }
                     }
                     KeyCode::Right => {
-                        if self.look_offset <= self.buffer.len() {
+                        if self.look_offset < self.buffer.len() {
                             self.look_offset += 1;
                         }
                     }
@@ -85,6 +83,9 @@ impl Input {
     pub fn render(&mut self, frame: &mut Frame, area: Rect) {
         if self.focused {
             self.update();
+
+            let min_x = std::cmp::min(self.last_render_width as usize, self.look_offset + 1) as u16;
+            frame.set_cursor(min_x, area.y);
         }
 
         self.last_render_width = area.width;
