@@ -1,21 +1,31 @@
-use crossterm::event::{Event, KeyCode};
-use ratatui::{
-    prelude::Rect,
-    widgets::{Paragraph, Wrap},
-    Frame,
-};
+use std::cell::RefCell;
 
-use crate::events;
+use crossterm::event::{Event, KeyCode};
+use ratatui::{prelude::Rect, widgets::Paragraph, Frame};
+
+use crate::{events, focus::Focusable};
 
 pub struct Input {
     buffer: String,
     look_offset: usize,
     last_render_width: u16,
+    focused: bool,
+}
+
+impl Focusable for Input {
+    fn focus(&mut self) {
+        self.focused = true;
+    }
+
+    fn blur(&mut self) {
+        self.focused = false;
+    }
 }
 
 impl Input {
     pub fn new() -> Self {
         Self {
+            focused: false,
             look_offset: 0,
             last_render_width: 0,
             buffer: String::with_capacity(512),
@@ -33,7 +43,7 @@ impl Input {
         output
     }
 
-    pub fn render(&mut self, frame: &mut Frame, area: Rect) {
+    fn update(&mut self) {
         let key_pressed_events = events::consume_if(|event| match event {
             Event::Key(event) => match event.code {
                 KeyCode::Char(_) | KeyCode::Backspace | KeyCode::Left | KeyCode::Right => true,
@@ -69,6 +79,12 @@ impl Input {
                 },
                 _ => {}
             }
+        }
+    }
+
+    pub fn render(&mut self, frame: &mut Frame, area: Rect) {
+        if self.focused {
+            self.update();
         }
 
         self.last_render_width = area.width;
