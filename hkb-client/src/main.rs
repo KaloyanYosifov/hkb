@@ -1,11 +1,12 @@
+use app_state::AppView;
 use components::Navigation;
 use crossterm::event::{self, Event, KeyCode};
 use ratatui::prelude::{Constraint, Direction, Layout};
 use ratatui::widgets::{Block, Borders};
-use std::fmt::Display;
 use std::{io::Error as IOError, thread, time::Duration};
 use thiserror::Error as ThisError;
 
+mod app_state;
 mod apps;
 mod components;
 mod events;
@@ -21,60 +22,9 @@ pub enum RendererError {
 
 type RenderResult = Result<(), RendererError>;
 
-#[derive(Clone, Copy)]
-enum AppView {
-    Main,
-    Reminders,
-}
-
-impl AppView {
-    fn next(&self) -> Self {
-        match self {
-            Self::Main => Self::Reminders,
-            Self::Reminders => Self::Main,
-        }
-    }
-}
-
-impl Display for AppView {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let text = match self {
-            Self::Main => "Main",
-            Self::Reminders => "Reminders",
-        };
-
-        write!(f, "{}", text)
-    }
-}
-
-struct AppState {
-    view: AppView,
-    editing: bool,
-}
-
-impl Default for AppState {
-    fn default() -> Self {
-        Self {
-            editing: false,
-            view: AppView::Main,
-        }
-    }
-}
-
-impl AppState {
-    pub fn set_view(&mut self, view: AppView) {
-        self.view = view;
-    }
-
-    pub fn get_view(&self) -> &AppView {
-        &self.view
-    }
-}
-
 fn main() -> RenderResult {
     let mut terminal = terminal::init()?;
     let mut should_quit = false;
-    let mut app_state = AppState::default();
     let mut main_app = apps::MainApp::new();
     let mut reminders_app = apps::RemindersApp::new();
     let mut navigation =
@@ -110,19 +60,15 @@ fn main() -> RenderResult {
                 ],
             )
             .split(frame.size());
-            navigation.render(frame, &mut app_state, base_layout[0]);
+            navigation.render(frame, base_layout[0]);
             frame.render_widget(
                 Block::new().borders(Borders::TOP).title("Status Bar"),
                 base_layout[2],
             );
 
-            let container = Block::default().title("Left");
-            let container_area = container.inner(base_layout[1]);
-            frame.render_widget(container, base_layout[1]);
-
-            match app_state.view {
-                AppView::Main => main_app.render(frame, &mut app_state, container_area),
-                AppView::Reminders => reminders_app.render(frame, &mut app_state, container_area),
+            match app_state::get_view() {
+                AppView::Main => main_app.render(frame, base_layout[1]),
+                AppView::Reminders => reminders_app.render(frame, base_layout[1]),
             };
         })?;
 

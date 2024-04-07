@@ -1,6 +1,29 @@
 use crossterm::event::Event;
 use parking_lot::{MappedMutexGuard, Mutex, MutexGuard};
 
+macro_rules! consume_key_event {
+    ($pattern:pat $(if $guard:expr)?) => {{
+        let events_consumed = events::consume_if(|event| match event {
+            Event::Key(event) => match event.code {
+                $pattern $(if $guard)? => true,
+                _ => false,
+            },
+            _ => false,
+        });
+
+        events_consumed
+    }};
+}
+
+macro_rules! has_key_event {
+    ($pattern:pat $(if $guard:expr)?) => {{
+        !events::consume_key_event!($pattern $(if $guard)?).is_empty()
+    }};
+}
+
+pub(crate) use consume_key_event;
+pub(crate) use has_key_event;
+
 static GLOBAL_EVENT_HANDLER: Mutex<Option<EventHandler>> = parking_lot::const_mutex(None);
 
 pub struct EventHandler {

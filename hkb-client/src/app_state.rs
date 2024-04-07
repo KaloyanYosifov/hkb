@@ -1,0 +1,60 @@
+use std::fmt::Display;
+
+use parking_lot::{MappedMutexGuard, Mutex, MutexGuard};
+
+static GLOBAL_APP_STATE: Mutex<Option<AppState>> = parking_lot::const_mutex(None);
+
+#[derive(Debug, Clone, Copy)]
+pub enum AppView {
+    Main,
+    Reminders,
+}
+
+impl Display for AppView {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let text = match self {
+            Self::Main => "Main",
+            Self::Reminders => "Reminders",
+        };
+
+        write!(f, "{}", text)
+    }
+}
+
+pub struct AppState {
+    view: AppView,
+    editing: bool,
+}
+
+impl Default for AppState {
+    fn default() -> Self {
+        Self {
+            editing: false,
+            view: AppView::Main,
+        }
+    }
+}
+
+impl AppState {
+    fn get_global() -> MappedMutexGuard<'static, Self> {
+        MutexGuard::map(GLOBAL_APP_STATE.lock(), |reader| {
+            reader.get_or_insert_with(Self::default)
+        })
+    }
+}
+
+pub fn set_view(view: AppView) {
+    AppState::get_global().view = view;
+}
+
+pub fn get_view() -> AppView {
+    AppState::get_global().view
+}
+
+pub fn set_editing(editing: bool) {
+    AppState::get_global().editing = editing;
+}
+
+pub fn is_editing() -> bool {
+    AppState::get_global().editing
+}
