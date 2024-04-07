@@ -1,23 +1,13 @@
 use crossterm::event::{Event, KeyCode};
 use ratatui::{prelude::Rect, widgets::Paragraph, Frame};
 
-use crate::{events, focus::Focusable};
+use crate::events;
 
 pub struct Input {
     buffer: String,
     look_offset: usize,
     last_render_width: u16,
     focused: bool,
-}
-
-impl Focusable for Input {
-    fn focus(&mut self) {
-        self.focused = true;
-    }
-
-    fn blur(&mut self) {
-        self.focused = false;
-    }
 }
 
 impl Input {
@@ -39,6 +29,14 @@ impl Input {
         }
 
         output
+    }
+
+    pub fn focus(&mut self) {
+        self.focused = true;
+    }
+
+    pub fn blur(&mut self) {
+        self.focused = false;
     }
 
     fn update(&mut self) {

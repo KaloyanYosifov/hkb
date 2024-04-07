@@ -9,7 +9,6 @@ use thiserror::Error as ThisError;
 mod apps;
 mod components;
 mod events;
-mod focus;
 mod terminal;
 
 #[derive(ThisError, Debug)]
