@@ -1,10 +1,10 @@
 use crossterm::event::Event;
 use parking_lot::{MappedMutexGuard, Mutex, MutexGuard};
 
-macro_rules! consume_key_event {
+macro_rules! consume_key_events {
     ($pattern:pat $(if $guard:expr)?) => {{
         let events_consumed = events::consume_if(|event| match event {
-            Event::Key(event) => match event.code {
+            crossterm::event::Event::Key(event) => match event.code {
                 $pattern $(if $guard)? => true,
                 _ => false,
             },
@@ -15,13 +15,38 @@ macro_rules! consume_key_event {
     }};
 }
 
+macro_rules! consume_key_event {
+    ($($pattern:pat $(if $guard:expr)? => $expr:expr)+) => {
+        // Disable unused variables, for the first match
+        #[allow(unused_variables)]
+        let events_consumed = events::consume_if(|event| match event {
+            crossterm::event::Event::Key(event) => match event.code {
+                $($pattern $(if $guard)? => true,)+
+                _ => false,
+            },
+            _ => false,
+        });
+
+        for event in events_consumed {
+            match event {
+                Event::Key(key) => match key.code {
+                    $($pattern $(if $guard)? => $expr,)+
+                    _ => {}
+                }
+                _ => {}
+            }
+        }
+    };
+}
+
 macro_rules! has_key_event {
     ($pattern:pat $(if $guard:expr)?) => {{
-        !events::consume_key_event!($pattern $(if $guard)?).is_empty()
+        !events::consume_key_events!($pattern $(if $guard)?).is_empty()
     }};
 }
 
 pub(crate) use consume_key_event;
+pub(crate) use consume_key_events;
 pub(crate) use has_key_event;
 
 static GLOBAL_EVENT_HANDLER: Mutex<Option<EventHandler>> = parking_lot::const_mutex(None);

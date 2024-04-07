@@ -1,5 +1,9 @@
 use crossterm::event::{Event, KeyCode};
-use ratatui::{prelude::Rect, widgets::Paragraph, Frame};
+use ratatui::{
+    prelude::Rect,
+    widgets::{Block, Borders, Paragraph},
+    Frame,
+};
 
 use crate::events;
 
@@ -40,42 +44,28 @@ impl Input {
     }
 
     fn update(&mut self) {
-        let key_pressed_events = events::consume_if(|event| match event {
-            Event::Key(event) => match event.code {
-                KeyCode::Char(_) | KeyCode::Backspace | KeyCode::Left | KeyCode::Right => true,
-                _ => false,
-            },
-            _ => false,
-        });
-
-        for event in key_pressed_events {
-            match event {
-                Event::Key(key) => match key.code {
-                    KeyCode::Char(c) => {
-                        self.buffer.push(c);
-                        self.look_offset = self.buffer.len();
-                    }
-                    KeyCode::Left => {
-                        if self.look_offset > self.last_render_width as usize {
-                            self.look_offset -= 1;
-                        }
-                    }
-                    KeyCode::Right => {
-                        if self.look_offset < self.buffer.len() {
-                            self.look_offset += 1;
-                        }
-                    }
-                    KeyCode::Backspace => {
-                        if self.buffer.len() > 0 {
-                            self.buffer = (&self.buffer[0..self.buffer.len() - 1]).to_string();
-                            self.look_offset = self.buffer.len();
-                        }
-                    }
-                    _ => {}
-                },
-                _ => {}
+        events::consume_key_event!(
+            KeyCode::Char(c) => {
+                self.buffer.push(c);
+                self.look_offset = self.buffer.len();
             }
-        }
+            KeyCode::Left => {
+                if self.look_offset > self.last_render_width as usize {
+                    self.look_offset -= 1;
+                }
+            }
+            KeyCode::Right => {
+                if self.look_offset < self.buffer.len() {
+                    self.look_offset += 1;
+                }
+            }
+            KeyCode::Backspace => {
+                if self.buffer.len() > 0 {
+                    self.buffer = (&self.buffer[0..self.buffer.len() - 1]).to_string();
+                    self.look_offset = self.buffer.len();
+                }
+            }
+        );
     }
 
     pub fn render(&mut self, frame: &mut Frame, area: Rect) {
@@ -87,6 +77,10 @@ impl Input {
         }
 
         self.last_render_width = area.width;
-        frame.render_widget(Paragraph::new(self.trimmed_buffer(&area)), area);
+        frame.render_widget(
+            Paragraph::new(self.trimmed_buffer(&area))
+                .block(Block::default().title("bro").borders(Borders::ALL)),
+            area,
+        );
     }
 }

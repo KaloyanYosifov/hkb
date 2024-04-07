@@ -1,8 +1,10 @@
+use crossterm::event::KeyCode;
 use ratatui::prelude::Direction::Vertical;
 use ratatui::prelude::{Constraint, Frame, Layout, Rect};
 use ratatui::widgets::{Block, Borders, List};
 
 use crate::components::Input;
+use crate::events;
 
 enum View {
     List,
@@ -27,6 +29,12 @@ impl RemindersApp {
     pub fn render(&mut self, frame: &mut Frame, area: Rect) {
         match self.view {
             View::List => {
+                if events::has_key_event!(KeyCode::Char(c) if c == 'a' || c == 'A') {
+                    self.view = View::Create;
+
+                    return;
+                }
+
                 let layout = Layout::new(
                     Vertical,
                     [
@@ -59,10 +67,11 @@ impl RemindersApp {
                 frame.render_widget(block, layout[1]);
 
                 let input_layout =
-                    Layout::new(Vertical, [Constraint::Length(2), Constraint::Length(2)])
+                    Layout::new(Vertical, [Constraint::Length(3), Constraint::Length(3)])
                         .split(block_area);
 
                 for (i, input) in self.inputs.iter_mut().enumerate() {
+                    input.focus();
                     input.render(frame, input_layout[i]);
                 }
             }
