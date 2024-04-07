@@ -1,4 +1,4 @@
-use crossterm::event::{Event, KeyCode};
+use crossterm::event::KeyCode;
 use ratatui::{
     prelude::{Color, Constraint, Direction, Layout, Rect, Style},
     widgets::{Block, Paragraph, Tabs},
@@ -28,7 +28,7 @@ impl Navigation {
 
 impl Navigation {
     pub fn render(&mut self, frame: &mut Frame, area: Rect) {
-        if events::has_key_event!(KeyCode::Tab) {
+        if !app_state::should_ignore_navigation_events() && events::has_key_event!(KeyCode::Tab) {
             self.selected_tab += 1;
 
             if self.selected_tab >= self.views.len() {

@@ -24,6 +24,7 @@ impl Display for AppView {
 pub struct AppState {
     view: AppView,
     editing: bool,
+    ignore_navigation_events: bool,
 }
 
 impl Default for AppState {
@@ -31,6 +32,7 @@ impl Default for AppState {
         Self {
             editing: false,
             view: AppView::Main,
+            ignore_navigation_events: false,
         }
     }
 }
@@ -57,4 +59,16 @@ pub fn set_editing(editing: bool) {
 
 pub fn is_editing() -> bool {
     AppState::get_global().editing
+}
+
+pub fn disable_navigation_events() {
+    AppState::get_global().ignore_navigation_events = true;
+}
+
+pub fn enable_navigation_events() {
+    AppState::get_global().ignore_navigation_events = false;
+}
+
+pub fn should_ignore_navigation_events() -> bool {
+    AppState::get_global().ignore_navigation_events
 }
