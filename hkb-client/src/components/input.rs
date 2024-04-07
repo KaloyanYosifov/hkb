@@ -69,17 +69,19 @@ impl Input {
     }
 
     pub fn render(&mut self, frame: &mut Frame, area: Rect) {
+        let block = Block::default().title("bro").borders(Borders::ALL);
+        let block_area = block.inner(area);
+
         if self.focused {
             self.update();
 
-            let min_x = std::cmp::min(self.last_render_width as usize, self.look_offset + 1) as u16;
-            frame.set_cursor(min_x, area.y);
+            let min_x = std::cmp::min(self.last_render_width as usize, self.look_offset) as u16;
+            frame.set_cursor(min_x + block_area.x, block_area.y);
         }
 
         self.last_render_width = area.width;
         frame.render_widget(
-            Paragraph::new(self.trimmed_buffer(&area))
-                .block(Block::default().title("bro").borders(Borders::ALL)),
+            Paragraph::new(self.trimmed_buffer(&area)).block(block),
             area,
         );
     }

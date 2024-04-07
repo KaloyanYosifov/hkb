@@ -14,13 +14,19 @@ enum View {
 pub struct RemindersApp {
     view: View,
     inputs: Vec<Input>,
+    focused_input: usize,
 }
 
 impl RemindersApp {
     pub fn new() -> Self {
+        let mut input = Input::new();
+
+        input.focus();
+
         Self {
             view: View::List,
-            inputs: vec![Input::new(), Input::new()],
+            focused_input: 0,
+            inputs: vec![input, Input::new()],
         }
     }
 }
@@ -29,6 +35,7 @@ impl RemindersApp {
     fn render_list(&mut self, frame: &mut Frame, area: Rect) {
         if events::has_key_event!(KeyCode::Char(c) if c == 'a' || c == 'A') {
             self.view = View::Create;
+            app_state::set_editing(true);
             app_state::disable_navigation_events();
 
             return;
@@ -50,6 +57,18 @@ impl RemindersApp {
     }
 
     fn render_create(&mut self, frame: &mut Frame, area: Rect) {
+        if !app_state::is_editing() && events::has_key_event!(KeyCode::Tab) {
+            let last_focused_input = self.focused_input;
+            self.focused_input += 1;
+
+            if self.focused_input >= self.inputs.len() {
+                self.focused_input = 0;
+            }
+
+            self.inputs[last_focused_input].blur();
+            self.inputs[self.focused_input].focus();
+        }
+
         let layout = Layout::new(
             Vertical,
             [
