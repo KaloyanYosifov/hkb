@@ -5,9 +5,10 @@ use ratatui::{
     Frame,
 };
 
-use crate::events;
+use crate::{app_state, events};
 
 pub struct Input {
+    title: String,
     buffer: String,
     look_offset: usize,
     last_render_width: u16,
@@ -15,8 +16,9 @@ pub struct Input {
 }
 
 impl Input {
-    pub fn new() -> Self {
+    pub fn new(title: String) -> Self {
         Self {
+            title,
             focused: false,
             look_offset: 0,
             last_render_width: 0,
@@ -44,6 +46,10 @@ impl Input {
     }
 
     fn update(&mut self) {
+        if !app_state::is_editing() {
+            return;
+        }
+
         events::consume_key_event!(
             KeyCode::Char(c) => {
                 self.buffer.push(c);
@@ -69,7 +75,7 @@ impl Input {
     }
 
     pub fn render(&mut self, frame: &mut Frame, area: Rect) {
-        let block = Block::default().title("bro").borders(Borders::ALL);
+        let block = Block::default().borders(Borders::ALL);
         let block_area = block.inner(area);
 
         if self.focused {
@@ -81,7 +87,7 @@ impl Input {
 
         self.last_render_width = area.width;
         frame.render_widget(
-            Paragraph::new(self.trimmed_buffer(&area)).block(block),
+            Paragraph::new(self.trimmed_buffer(&area)).block(block.title(self.title.as_ref())),
             area,
         );
     }

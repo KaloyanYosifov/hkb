@@ -1,7 +1,7 @@
 use crossterm::event::KeyCode;
 use ratatui::prelude::Direction::Vertical;
 use ratatui::prelude::{Constraint, Frame, Layout, Rect};
-use ratatui::widgets::{Block, Borders, List};
+use ratatui::widgets::{Block, Borders, List, Padding};
 
 use crate::components::Input;
 use crate::{app_state, events};
@@ -19,14 +19,17 @@ pub struct RemindersApp {
 
 impl RemindersApp {
     pub fn new() -> Self {
-        let mut input = Input::new();
+        let mut inputs = vec![
+            Input::new("Title".to_string()),
+            Input::new("Small Description".to_string()),
+        ];
 
-        input.focus();
+        inputs[0].focus();
 
         Self {
+            inputs,
             view: View::List,
             focused_input: 0,
-            inputs: vec![input, Input::new()],
         }
     }
 }
@@ -57,16 +60,21 @@ impl RemindersApp {
     }
 
     fn render_create(&mut self, frame: &mut Frame, area: Rect) {
-        if !app_state::is_editing() && events::has_key_event!(KeyCode::Tab) {
-            let last_focused_input = self.focused_input;
-            self.focused_input += 1;
+        if !app_state::is_editing() {
+            if events::has_key_event!(KeyCode::Tab) {
+                let last_focused_input = self.focused_input;
+                self.focused_input += 1;
 
-            if self.focused_input >= self.inputs.len() {
-                self.focused_input = 0;
+                if self.focused_input >= self.inputs.len() {
+                    self.focused_input = 0;
+                }
+
+                self.inputs[last_focused_input].blur();
+                self.inputs[self.focused_input].focus();
+            } else if events::has_key_event!(KeyCode::Char(c) if c == 'I' || c == 'i' || c == 'A' || c == 'a')
+            {
+                app_state::set_editing(true);
             }
-
-            self.inputs[last_focused_input].blur();
-            self.inputs[self.focused_input].focus();
         }
 
         let layout = Layout::new(
@@ -81,6 +89,7 @@ impl RemindersApp {
 
         let block = Block::default()
             .borders(Borders::ALL)
+            .padding(Padding::symmetric(1, 1))
             .title("Create Reminder");
         let block_area = block.inner(layout[1]);
         frame.render_widget(block, layout[1]);

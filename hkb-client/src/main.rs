@@ -41,6 +41,7 @@ fn main() -> RenderResult {
                             should_quit =
                                 c == 'c' && event.modifiers.contains(event::KeyModifiers::CONTROL)
                         }
+                        KeyCode::Esc => app_state::set_editing(false),
                         _ => {}
                     },
                     _ => {}
@@ -62,7 +63,13 @@ fn main() -> RenderResult {
             .split(frame.size());
             navigation.render(frame, base_layout[0]);
             frame.render_widget(
-                Block::new().borders(Borders::TOP).title("Status Bar"),
+                Block::new()
+                    .borders(Borders::TOP)
+                    .title(if app_state::is_editing() {
+                        "Insert mode"
+                    } else {
+                        "Normal Mode"
+                    }),
                 base_layout[2],
             );
 
