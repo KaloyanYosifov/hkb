@@ -7,18 +7,18 @@ use ratatui::{
 
 use crate::{app_state, events};
 
-pub struct Input {
-    title: String,
-    buffer: String,
+use super::StatefulComponent;
+
+pub struct InputState {
+    pub buffer: String,
+    focused: bool,
     look_offset: usize,
     last_render_width: u16,
-    focused: bool,
 }
 
-impl Input {
-    pub fn new(title: String) -> Self {
+impl Default for InputState {
+    fn default() -> Self {
         Self {
-            title,
             focused: false,
             look_offset: 0,
             last_render_width: 0,
@@ -27,16 +27,7 @@ impl Input {
     }
 }
 
-impl Input {
-    fn trimmed_buffer(&self, area: &Rect) -> &str {
-        let mut output = &self.buffer[..];
-        if self.look_offset >= (area.width as usize) {
-            output = &self.buffer[self.look_offset - (area.width as usize)..];
-        }
-
-        output
-    }
-
+impl InputState {
     pub fn focus(&mut self) {
         self.focused = true;
     }
@@ -44,50 +35,76 @@ impl Input {
     pub fn blur(&mut self) {
         self.focused = false;
     }
+}
 
-    fn update(&mut self) {
+pub struct Input<'a> {
+    title: &'a str,
+}
+
+impl<'a> Input<'a> {
+    pub fn new(title: &'a str) -> Self {
+        Self { title }
+    }
+}
+
+impl<'a> Input<'a> {
+    fn trimmed_buffer(&self, state: &'a InputState, area: &Rect) -> &str {
+        let mut output = &state.buffer[..];
+        if state.look_offset >= (area.width as usize) {
+            output = &state.buffer[state.look_offset - (area.width as usize)..];
+        }
+
+        output
+    }
+
+    fn update(&self, state: &mut InputState) {
         if !app_state::is_editing() {
             return;
         }
 
         events::consume_key_event!(
             KeyCode::Char(c) => {
-                self.buffer.push(c);
-                self.look_offset = self.buffer.len();
+                state.buffer.push(c);
+                state.look_offset = state.buffer.len();
             }
             KeyCode::Left => {
-                if self.look_offset > self.last_render_width as usize {
-                    self.look_offset -= 1;
+                if state.look_offset > state.last_render_width as usize {
+                    state.look_offset -= 1;
                 }
             }
             KeyCode::Right => {
-                if self.look_offset < self.buffer.len() {
-                    self.look_offset += 1;
+                if state.look_offset < state.buffer.len() {
+                    state.look_offset += 1;
                 }
             }
             KeyCode::Backspace => {
-                if self.buffer.len() > 0 {
-                    self.buffer = (&self.buffer[0..self.buffer.len() - 1]).to_string();
-                    self.look_offset = self.buffer.len();
+                if state.buffer.len() > 0 {
+                    state.buffer = (&state.buffer[0..state.buffer.len() - 1]).to_string();
+                    state.look_offset = state.buffer.len();
                 }
             }
         );
     }
+}
 
-    pub fn render(&mut self, frame: &mut Frame, area: Rect) {
+impl<'a> StatefulComponent for Input<'a> {
+    type State = InputState;
+
+    fn render(&mut self, frame: &mut Frame, state: &mut InputState, area: Rect) {
         let block = Block::default().borders(Borders::ALL);
         let block_area = block.inner(area);
 
-        if self.focused {
-            self.update();
+        if state.focused {
+            self.update(state);
 
-            let min_x = std::cmp::min(self.last_render_width as usize, self.look_offset) as u16;
+            let min_x = std::cmp::min(state.last_render_width as usize, state.look_offset) as u16;
             frame.set_cursor(min_x + block_area.x, block_area.y);
         }
 
-        self.last_render_width = area.width;
+        state.last_render_width = area.width;
         frame.render_widget(
-            Paragraph::new(self.trimmed_buffer(&area)).block(block.title(self.title.as_ref())),
+            Paragraph::new(self.trimmed_buffer(state, &area))
+                .block(block.title(self.title.as_ref())),
             area,
         );
     }
