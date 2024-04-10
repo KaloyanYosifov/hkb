@@ -5,7 +5,7 @@ use ratatui::{
     Frame,
 };
 
-use crate::{app_state, events};
+use crate::{app_state, events, focus::Focusable};
 
 use super::StatefulComponent;
 
@@ -27,12 +27,12 @@ impl Default for InputState {
     }
 }
 
-impl InputState {
-    pub fn focus(&mut self) {
+impl Focusable for InputState {
+    fn focus(&mut self) {
         self.focused = true;
     }
 
-    pub fn blur(&mut self) {
+    fn blur(&mut self) {
         self.focused = false;
     }
 }

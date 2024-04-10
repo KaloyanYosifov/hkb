@@ -10,6 +10,8 @@ use crate::{
     events,
 };
 
+use super::Component;
+
 pub struct Navigation {
     title: String,
     views: Vec<AppView>,
@@ -26,8 +28,8 @@ impl Navigation {
     }
 }
 
-impl Navigation {
-    pub fn render(&mut self, frame: &mut Frame, area: Rect) {
+impl Component for Navigation {
+    fn render(&mut self, frame: &mut Frame, area: Rect) {
         if !app_state::should_ignore_navigation_events() && events::has_key_event!(KeyCode::Tab) {
             self.selected_tab += 1;
 
@@ -38,7 +40,7 @@ impl Navigation {
             app_state::set_view(self.views[self.selected_tab].clone());
         }
 
-        let block = Block::new().style(Style::default().bg(ratatui::style::Color::Black));
+        let block = Block::new().style(Style::default().bg(Color::Black));
         let block_inner = block.inner(area);
         let layout = Layout::new(
             Direction::Horizontal,

@@ -1,5 +1,5 @@
 use app_state::AppView;
-use components::Navigation;
+use components::{Component, Navigation};
 use crossterm::event::{self, Event, KeyCode};
 use ratatui::prelude::{Constraint, Direction, Layout};
 use ratatui::widgets::{Block, Borders};
@@ -10,7 +10,9 @@ mod app_state;
 mod apps;
 mod components;
 mod events;
+mod focus;
 mod terminal;
+mod utils;
 
 #[derive(ThisError, Debug)]
 pub enum RendererError {
