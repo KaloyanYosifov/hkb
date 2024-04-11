@@ -1,25 +1,33 @@
-use ratatui::prelude::Constraint;
-use ratatui::prelude::Direction::{Horizontal, Vertical};
-use ratatui::prelude::Layout;
-
+use crossterm::event::KeyCode;
 use ratatui::text::Span;
 use ratatui::{
     style::{Color, Style},
     widgets::Paragraph,
 };
 
+use crate::events;
 use crate::focus::Focusable;
 use crate::utils::centered_layout;
 
 use super::StatefulComponent;
 
 pub struct ButtonState {
+    clicked: bool,
     focused: bool,
 }
 
 impl Default for ButtonState {
     fn default() -> Self {
-        Self { focused: false }
+        Self {
+            clicked: false,
+            focused: false,
+        }
+    }
+}
+
+impl ButtonState {
+    pub fn is_clicked(&self) -> bool {
+        self.clicked
     }
 }
 
@@ -62,6 +70,12 @@ impl<'a> StatefulComponent for Button<'a> {
         state: &mut ButtonState,
         mut area: ratatui::prelude::Rect,
     ) {
+        state.clicked = false;
+
+        if state.focused && events::has_key_event!(KeyCode::Enter) {
+            state.clicked = true;
+        }
+
         let mut text = Span::raw(format!("<{}>", self.label));
 
         if state.focused {
