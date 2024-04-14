@@ -1,9 +1,64 @@
+use chrono::TimeDelta;
+use pest::iterators::Pair;
 use pest::Parser;
 use pest_derive::Parser;
+
+#[cfg(not(test))]
+macro_rules! now {
+    () => {
+        chrono::prelude::Utc::now()
+    };
+}
+
+#[cfg(test)]
+macro_rules! now {
+    () => {{
+        let date =
+            chrono::NaiveDateTime::parse_from_str("2024-04-14 08:00:00", "%Y-%m-%d %H:%M:%S")
+                .unwrap();
+        chrono::DateTime::from_naive_utc_and_offset(date, chrono::Utc)
+            as chrono::DateTime<chrono::Utc>
+    }};
+}
 
 #[derive(Parser)]
 #[grammar = "../grammar/human_date.pest"]
 struct HumanDateParser;
+
+fn ctoi(char: char) -> u8 {
+    // 48 is the ascii code of 0
+    return (char as u8) - 48;
+}
+
+fn parse_in_sentence(sentence: Pair<Rule>) {
+    let mut inner = sentence.into_inner();
+    let mut pair = inner.next().unwrap();
+    let mut duration_value: i64 = 0;
+
+    while !matches!(pair.as_rule(), Rule::duration) {
+        let number = ctoi(pair.as_span().as_str().chars().next().unwrap());
+
+        duration_value *= 10;
+        duration_value += number as i64;
+
+        pair = inner.next().unwrap();
+    }
+
+    let duration = pair.as_span().as_str();
+    let duration = match duration {
+        "minute" => TimeDelta::minutes(duration_value),
+        "hour" => TimeDelta::hours(duration_value),
+        "day" => TimeDelta::days(duration_value),
+        "week" => TimeDelta::weeks(duration_value),
+        "month" => TimeDelta::weeks(4 * duration_value),
+        "year" => TimeDelta::weeks((12 * 4) * duration_value),
+        _ => panic!("NOOOOOOO"),
+    };
+    let final_date = now!() + duration;
+
+    println!("{}", final_date);
+    // println!("{:?}", final_date.and_utc());
+}
 
 /// Parse a human date string into a date
 ///
@@ -22,7 +77,10 @@ pub fn parse(input: impl AsRef<str>) {
     };
     let sentence = result.next().unwrap();
 
-    println!("{:?}", sentence);
+    match sentence.as_rule() {
+        Rule::IN => parse_in_sentence(sentence),
+        _ => {}
+    }
 }
 
 #[cfg(test)]

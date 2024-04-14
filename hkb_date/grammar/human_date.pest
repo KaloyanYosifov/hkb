@@ -2,11 +2,15 @@ SENTENCE = _{
     IN
 }
 
-IN = @{ "in " ~ !"0" ~ number+ ~ " " ~ duration ~ "s"? }
+IN = { "in " ~ !"0" ~ number+ ~ " " ~ duration ~ "s"? }
 
 number = { ASCII_DIGIT }
 duration = { 
-    "minute"
+    "second"
+    | "minute"
     | "hour"
     | "day"
+    | "week"
+    | "month"
+    | "year"
 }
