@@ -1,8 +1,9 @@
 [workspace]
 resolver = "2"
 members = [
-    "hkb-core",
-    "hkb-client", "hkb-date",
+    "hkb_core",
+    "hkb_client",
+    "hkb_date",
 ]
 
 [workspace.dependencies]

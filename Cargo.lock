@@ -215,7 +215,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "95505c38b4572b2d910cecb0281560f54b440a19336cbbcb27bf6ce6adc6f5a8"
 
 [[package]]
-name = "hkb-client"
+name = "hkb_client"
 version = "0.1.0"
 dependencies = [
  "crossterm",
@@ -225,11 +225,11 @@ dependencies = [
 ]
 
 [[package]]
-name = "hkb-core"
+name = "hkb_core"
 version = "0.1.0"
 
 [[package]]
-name = "hkb-date"
+name = "hkb_date"
 version = "0.1.0"
 dependencies = [
  "chrono",

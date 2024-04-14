@@ -9,9 +9,9 @@ struct HumanDateParser;
 ///
 /// Example
 /// ```rust
-/// use hkb_client::human_date_parsing::parse;
+/// use hkb_date::parse_human_date;
 /// let input = "In 5 minutes";
-/// println!("{:?}}, parse(input));
+/// println!("{:?}}, parse_human_date(input));
 ///
 /// ```
 pub fn parse(input: impl AsRef<str>) {
