@@ -5,6 +5,15 @@ use pest_derive::Parser;
 #[grammar = "../grammar/human_date.pest"]
 struct HumanDateParser;
 
+/// Parse a human date string into a date
+///
+/// Example
+/// ```rust
+/// use hkb_client::human_date_parsing::parse;
+/// let input = "In 5 minutes";
+/// println!("{:?}}, parse(input));
+///
+/// ```
 pub fn parse(input: impl AsRef<str>) {
     let lowercased = input.as_ref().to_lowercase();
     let mut result = match HumanDateParser::parse(Rule::SENTENCE, &lowercased) {
