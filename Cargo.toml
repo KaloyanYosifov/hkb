@@ -2,7 +2,7 @@
 resolver = "2"
 members = [
     "hkb-core",
-    "hkb-client",
+    "hkb-client", "hkb-date",
 ]
 
 [workspace.dependencies]
