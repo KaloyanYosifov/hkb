@@ -1,10 +1,42 @@
 SENTENCE = _{ 
     IN
+    | AT
+    | ON
 }
 
 IN = { "in " ~ !"0" ~ number+ ~ " " ~ duration ~ "s"? }
+AT = { "at " ~ number{1,2} ~ ":" ~ number{1,2} ~ (" " ~ ON)? }
+ON = { "on " ~ "the " ~ day ~ " of " ~ month }
 
 number = { ASCII_DIGIT }
+th_number = { '4'..'9' ~ "th" }
+day = {
+    "1st"
+    | "2nd"
+    | "3rd"
+    | th_number
+    | "1" ~ '0'..'9' ~ "th"
+    | "21st"
+    | "22nd"
+    | "23rd"
+    | "2" ~ th_number
+    | "30th"
+    | "31st"
+}
+month = {
+    "january"
+    | "february"
+    | "march"
+    | "april"
+    | "may"
+    | "june"
+    | "july"
+    | "august"
+    | "september"
+    | "october"
+    | "november"
+    | "december"
+}
 duration = { 
     "second"
     | "minute"

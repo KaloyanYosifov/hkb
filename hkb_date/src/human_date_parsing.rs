@@ -1,4 +1,4 @@
-use chrono::TimeDelta;
+use chrono::{DateTime, TimeDelta, Utc};
 use pest::iterators::Pair;
 use pest::Parser;
 use pest_derive::Parser;
@@ -30,7 +30,7 @@ fn ctoi(char: char) -> u8 {
     return (char as u8) - 48;
 }
 
-fn parse_in_sentence(sentence: Pair<Rule>) {
+fn parse_in_sentence(sentence: Pair<Rule>) -> DateTime<Utc> {
     let mut inner = sentence.into_inner();
     let mut pair = inner.next().unwrap();
     let mut duration_value: i64 = 0;
@@ -56,8 +56,15 @@ fn parse_in_sentence(sentence: Pair<Rule>) {
     };
     let final_date = now!() + duration;
 
-    println!("{}", final_date);
-    // println!("{:?}", final_date.and_utc());
+    final_date
+}
+
+fn parse_on_sentence(sentence: Pair<Rule>) -> DateTime<Utc> {
+    todo!("Implement on sentence!");
+}
+
+fn parse_at_sentence(sentence: Pair<Rule>) -> DateTime<Utc> {
+    todo!("Implement at sentence!");
 }
 
 /// Parse a human date string into a date
@@ -79,8 +86,10 @@ pub fn parse(input: impl AsRef<str>) {
 
     match sentence.as_rule() {
         Rule::IN => parse_in_sentence(sentence),
-        _ => {}
-    }
+        Rule::AT => parse_at_sentence(sentence),
+        Rule::ON => parse_on_sentence(sentence),
+        _ => panic!("Unknown rule!"),
+    };
 }
 
 #[cfg(test)]
@@ -91,6 +100,18 @@ mod tests {
     fn it_can_parse_in_sentence() {
         parse("In 10 minutes");
 
+        // TODO: fix assert
+        assert!(false)
+    }
+
+    #[test]
+    fn it_can_parse_at_sentence() {
+        parse("At 5:00");
+        parse("At 5:00 on the 31st of January");
+        parse("At 5:00 on the 30th of March");
+        parse("At 5:00 on the 11th of aDecembere");
+
+        // TODO: fix assert
         assert!(false)
     }
 }
