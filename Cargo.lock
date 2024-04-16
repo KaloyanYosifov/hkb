@@ -236,6 +236,7 @@ dependencies = [
  "chrono",
  "pest",
  "pest_derive",
+ "thiserror",
 ]
 
 [[package]]

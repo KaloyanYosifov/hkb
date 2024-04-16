@@ -2,6 +2,15 @@ use chrono::{DateTime, Datelike, NaiveDate, NaiveDateTime, NaiveTime, TimeDelta,
 use pest::iterators::Pair;
 use pest::Parser;
 use pest_derive::Parser;
+use thiserror::Error as ThisError;
+
+#[derive(ThisError, Debug)]
+pub enum DateParsingError {
+    #[error("Failed to parse input")]
+    FailedToParseInput(String),
+    #[error("Unknown rule encountered!")]
+    UnknownRuleEncountered(),
+}
 
 const MONTHS: [&str; 12] = [
     "january",
@@ -42,6 +51,8 @@ macro_rules! now {
     }};
 }
 
+type DateParsingResult = Result<DateTime<Utc>, DateParsingError>;
+
 #[derive(Parser)]
 #[grammar = "../grammar/human_date.pest"]
 struct HumanDateParser;
@@ -51,7 +62,7 @@ fn ctoi(char: char) -> u8 {
     return (char as u8) - 48;
 }
 
-fn parse_in_sentence(sentence: Pair<Rule>) -> DateTime<Utc> {
+fn parse_in_sentence(sentence: Pair<Rule>) -> DateParsingResult {
     let mut inner = sentence.into_inner();
     let mut pair = inner.next().unwrap();
     let mut duration_value: i64 = 0;
@@ -78,32 +89,50 @@ fn parse_in_sentence(sentence: Pair<Rule>) -> DateTime<Utc> {
     };
     let final_date = now!() + duration;
 
-    final_date
+    Ok(final_date)
 }
 
 // TODO: update return type to be a result
-fn parse_on_sentence(sentence: Pair<Rule>) -> DateTime<Utc> {
+fn parse_on_sentence(sentence: Pair<Rule>) -> DateParsingResult {
     // We are unwrapping because we are sure we have these in the
     // data structure
     let (day, month) = {
         let mut inner = sentence.into_inner();
         let day = inner.next().unwrap().as_str();
-        let day = (&day[0..day.len() - 2]).parse::<u8>().unwrap();
+        let day = (&day[0..day.len() - 2]).parse::<u32>().unwrap();
         let month = inner.next().unwrap().as_str();
-        let month = (MONTHS.iter().position(|&m| m == month).unwrap() + 1) as u8;
+        let month = (MONTHS.iter().position(|&m| m == month).unwrap() + 1) as u32;
 
         (day, month)
     };
 
-    let date = NaiveDate::from_ymd_opt(now!().year(), month as u32, day as u32).unwrap();
+    let date = NaiveDate::from_ymd_opt(now!().year(), month, day).unwrap();
     let time = NaiveTime::from_hms_opt(8, 0, 0).unwrap();
     let full_date = naive_to_utc!(NaiveDateTime::new(date, time));
 
-    full_date
+    Ok(full_date)
 }
 
-fn parse_at_sentence(sentence: Pair<Rule>) -> DateTime<Utc> {
-    todo!("Implement at sentence!");
+fn parse_at_sentence(sentence: Pair<Rule>) -> DateParsingResult {
+    let mut inner = sentence.into_inner();
+    let hour = inner.next().unwrap().as_str().parse::<u32>().unwrap();
+    let minute = inner.next().unwrap().as_str().parse::<u32>().unwrap();
+
+    let date = {
+        let on_date = {
+            if let Some(pair) = inner.next() {
+                parse_on_sentence(pair)?
+            } else {
+                now!()
+            }
+        };
+        let date = NaiveDate::from_ymd_opt(on_date.year(), on_date.month(), on_date.day()).unwrap();
+        let time = NaiveTime::from_hms_opt(hour, minute, 0).unwrap();
+
+        naive_to_utc!(NaiveDateTime::new(date, time))
+    };
+
+    Ok(date)
 }
 
 /// Parse a human date string into a date
@@ -112,14 +141,14 @@ fn parse_at_sentence(sentence: Pair<Rule>) -> DateTime<Utc> {
 /// ```rust
 /// use hkb_date::parse_human_date;
 /// let input = "In 5 minutes";
-/// println!("{:?}}, parse_human_date(input));
+/// println!("{}", parse_human_date(input).unwrap().to_string());
 ///
 /// ```
-pub fn parse(input: impl AsRef<str>) {
+pub fn parse(input: impl AsRef<str>) -> DateParsingResult {
     let lowercased = input.as_ref().to_lowercase();
     let mut result = match HumanDateParser::parse(Rule::SENTENCE, &lowercased) {
         Ok(result) => result,
-        Err(e) => panic!("Could not parse {:?}", e),
+        Err(_) => return Err(DateParsingError::FailedToParseInput(input.as_ref().into())),
     };
     let sentence = result.next().unwrap();
 
@@ -127,39 +156,41 @@ pub fn parse(input: impl AsRef<str>) {
         Rule::IN => parse_in_sentence(sentence),
         Rule::AT => parse_at_sentence(sentence),
         Rule::ON => parse_on_sentence(sentence),
-        _ => panic!("Unknown rule!"),
-    };
+        _ => Err(DateParsingError::UnknownRuleEncountered()),
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
+    macro_rules! assert_date_parsing {
+        ($input:literal, $expected: literal) => {
+            let date = parse($input).expect("We should have been able to parse!");
+
+            assert_eq!($expected, date.to_string());
+        };
+    }
+
     #[test]
     fn it_can_parse_in_sentence() {
-        parse("In 10 minutes");
-
-        // TODO: fix assert
-        assert!(false)
+        assert_date_parsing!("In 10 minutes", "2024-04-14 08:10:00 UTC");
     }
 
     #[test]
     fn it_can_parse_at_sentence() {
-        parse("At 5:00");
-        parse("At 5:00 on the 31st of January");
-        parse("At 5:00 on the 30th of March");
-        parse("At 5:00 on the 11th of December");
-
-        // TODO: fix assert
-        assert!(false)
+        assert_date_parsing!("At 05:00", "2024-04-14 05:00:00 UTC");
+        assert_date_parsing!("At 15:00 on the 31st of January", "2024-01-31 15:00:00 UTC");
+        assert_date_parsing!("At 22:30 on the 30th of March", "2024-03-30 22:30:00 UTC");
+        assert_date_parsing!(
+            "At 13:00 on the 11th of December",
+            "2024-12-11 13:00:00 UTC"
+        );
     }
 
     #[test]
     fn it_can_parse_on_sentence() {
-        parse("On 5th of May");
-        parse("On the 5th of May");
-
-        // TODO: fix assert
-        assert!(false)
+        assert_date_parsing!("On 5th of May", "2024-05-05 08:00:00 UTC");
+        assert_date_parsing!("On the 5th of May", "2024-05-05 08:00:00 UTC");
     }
 }
