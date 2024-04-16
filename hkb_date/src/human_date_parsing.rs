@@ -1,7 +1,29 @@
-use chrono::{DateTime, TimeDelta, Utc};
+use chrono::{DateTime, Datelike, NaiveDate, NaiveDateTime, NaiveTime, TimeDelta, Utc};
 use pest::iterators::Pair;
 use pest::Parser;
 use pest_derive::Parser;
+
+const MONTHS: [&str; 12] = [
+    "january",
+    "february",
+    "march",
+    "april",
+    "may",
+    "june",
+    "july",
+    "august",
+    "september",
+    "october",
+    "november",
+    "december",
+];
+
+macro_rules! naive_to_utc {
+    ($date:expr) => {{
+        chrono::DateTime::from_naive_utc_and_offset($date, chrono::Utc)
+            as chrono::DateTime<chrono::Utc>
+    }};
+}
 
 #[cfg(not(test))]
 macro_rules! now {
@@ -16,8 +38,7 @@ macro_rules! now {
         let date =
             chrono::NaiveDateTime::parse_from_str("2024-04-14 08:00:00", "%Y-%m-%d %H:%M:%S")
                 .unwrap();
-        chrono::DateTime::from_naive_utc_and_offset(date, chrono::Utc)
-            as chrono::DateTime<chrono::Utc>
+        naive_to_utc!(date)
     }};
 }
 
@@ -52,6 +73,7 @@ fn parse_in_sentence(sentence: Pair<Rule>) -> DateTime<Utc> {
         "week" => TimeDelta::weeks(duration_value),
         "month" => TimeDelta::weeks(4 * duration_value),
         "year" => TimeDelta::weeks((12 * 4) * duration_value),
+        // TODO: Add error support
         _ => panic!("NOOOOOOO"),
     };
     let final_date = now!() + duration;
@@ -59,8 +81,25 @@ fn parse_in_sentence(sentence: Pair<Rule>) -> DateTime<Utc> {
     final_date
 }
 
+// TODO: update return type to be a result
 fn parse_on_sentence(sentence: Pair<Rule>) -> DateTime<Utc> {
-    todo!("Implement on sentence!");
+    // We are unwrapping because we are sure we have these in the
+    // data structure
+    let (day, month) = {
+        let mut inner = sentence.into_inner();
+        let day = inner.next().unwrap().as_str();
+        let day = (&day[0..day.len() - 2]).parse::<u8>().unwrap();
+        let month = inner.next().unwrap().as_str();
+        let month = (MONTHS.iter().position(|&m| m == month).unwrap() + 1) as u8;
+
+        (day, month)
+    };
+
+    let date = NaiveDate::from_ymd_opt(now!().year(), month as u32, day as u32).unwrap();
+    let time = NaiveTime::from_hms_opt(8, 0, 0).unwrap();
+    let full_date = naive_to_utc!(NaiveDateTime::new(date, time));
+
+    full_date
 }
 
 fn parse_at_sentence(sentence: Pair<Rule>) -> DateTime<Utc> {
@@ -109,7 +148,16 @@ mod tests {
         parse("At 5:00");
         parse("At 5:00 on the 31st of January");
         parse("At 5:00 on the 30th of March");
-        parse("At 5:00 on the 11th of aDecembere");
+        parse("At 5:00 on the 11th of December");
+
+        // TODO: fix assert
+        assert!(false)
+    }
+
+    #[test]
+    fn it_can_parse_on_sentence() {
+        parse("On 5th of May");
+        parse("On the 5th of May");
 
         // TODO: fix assert
         assert!(false)

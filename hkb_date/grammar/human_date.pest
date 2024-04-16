@@ -6,7 +6,7 @@ SENTENCE = _{
 
 IN = { "in " ~ !"0" ~ number+ ~ " " ~ duration ~ "s"? }
 AT = { "at " ~ number{1,2} ~ ":" ~ number{1,2} ~ (" " ~ ON)? }
-ON = { "on " ~ "the " ~ day ~ " of " ~ month }
+ON = { "on " ~ "the "? ~ day ~ " of " ~ month }
 
 number = { ASCII_DIGIT }
 th_number = { '4'..'9' ~ "th" }
