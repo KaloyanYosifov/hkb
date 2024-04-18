@@ -1,6 +1,4 @@
-use chrono::{
-    DateTime, Datelike, Local, NaiveDate, NaiveDateTime, NaiveTime, TimeDelta, TimeZone, Utc,
-};
+use chrono::{DateTime, Datelike, NaiveDate, TimeDelta, Utc};
 use pest::iterators::Pair;
 use pest::Parser;
 use pest_derive::Parser;
@@ -135,8 +133,7 @@ impl HumanDateParser {
             let date = NaiveDate::from_ymd_opt(on_date.year(), on_date.month(), on_date.day())
                 .unwrap()
                 .and_hms_opt(hour, minute, 0)
-                .unwrap()
-                .and_utc();
+                .unwrap();
 
             date
         };
