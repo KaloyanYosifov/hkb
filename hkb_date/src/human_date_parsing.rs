@@ -1,8 +1,9 @@
-use chrono::{DateTime, Datelike, NaiveDate, TimeDelta, Utc};
 use pest::iterators::Pair;
 use pest::Parser;
 use pest_derive::Parser;
 use thiserror::Error as ThisError;
+
+use crate::date::{Date, DateError, Duration, DurationError};
 
 #[derive(ThisError, Debug)]
 pub enum DateParsingError {
@@ -10,8 +11,10 @@ pub enum DateParsingError {
     FailedToParseInput(String),
     #[error("Unknown rule encountered!")]
     UnknownRuleEncountered(),
-    #[error("Invalid duration specified: {0}")]
-    InvalidDurationSpecified(String),
+    #[error(transparent)]
+    InvalidDateError(#[from] DateError),
+    #[error(transparent)]
+    InvalidDurationSpecified(#[from] DurationError),
 }
 
 const MONTHS: [&str; 12] = [
@@ -29,24 +32,7 @@ const MONTHS: [&str; 12] = [
     "december",
 ];
 
-#[cfg(not(test))]
-macro_rules! now {
-    () => {
-        chrono::prelude::Utc::now()
-    };
-}
-
-#[cfg(test)]
-macro_rules! now {
-    () => {{
-        let date =
-            chrono::NaiveDateTime::parse_from_str("2024-04-14 08:00:00", "%Y-%m-%d %H:%M:%S")
-                .unwrap();
-        date.and_utc()
-    }};
-}
-
-type DateParsingResult = Result<DateTime<Utc>, DateParsingError>;
+type DateParsingResult<T: Date> = Result<T, DateParsingError>;
 
 fn ctoi(char: char) -> u8 {
     // 48 is the ascii code of 0
@@ -57,16 +43,18 @@ fn ctoi(char: char) -> u8 {
 #[grammar = "../grammar/human_date.pest"]
 struct PestHumanDateParser;
 
-pub struct HumanDateParser;
+pub struct HumanDateParser<T: Date> {
+    start_date: T,
+}
 
-impl HumanDateParser {
-    pub fn new() -> Self {
-        Self {}
+impl<T: Date + Clone> HumanDateParser<T> {
+    pub fn new(start_date: T) -> Self {
+        Self { start_date }
     }
 }
 
-impl HumanDateParser {
-    fn parse_in_sentence(&self, sentence: Pair<Rule>) -> DateParsingResult {
+impl<T: Date + Clone> HumanDateParser<T> {
+    fn parse_in_sentence(&self, sentence: Pair<Rule>) -> DateParsingResult<T> {
         let mut inner = sentence.into_inner();
         let mut pair = inner.next().unwrap();
         let mut duration_value: i64 = 0;
@@ -81,21 +69,15 @@ impl HumanDateParser {
         }
 
         let duration = pair.as_span().as_str();
-        let duration = match duration {
-            "minute" => TimeDelta::minutes(duration_value),
-            "hour" => TimeDelta::hours(duration_value),
-            "day" => TimeDelta::days(duration_value),
-            "week" => TimeDelta::weeks(duration_value),
-            "month" => TimeDelta::weeks(4 * duration_value),
-            "year" => TimeDelta::weeks((12 * 4) * duration_value),
-            _ => return Err(DateParsingError::InvalidDurationSpecified(duration.into())),
-        };
-        let final_date = now!() + duration;
+        let duration = Duration::from_string(duration, duration_value as u32)?;
+        let mut date = self.start_date.clone();
 
-        Ok(final_date)
+        date.add_duration(duration);
+
+        Ok(date)
     }
 
-    fn parse_on_sentence(&self, sentence: Pair<Rule>) -> DateParsingResult {
+    fn parse_on_sentence(&self, sentence: Pair<Rule>) -> DateParsingResult<T> {
         // We are unwrapping because we are sure we have these in the
         // data structure
         let (day, month) = {
@@ -107,35 +89,29 @@ impl HumanDateParser {
 
             (day, month)
         };
-
-        let date = NaiveDate::from_ymd_opt(now!().year(), month, day)
-            .unwrap()
-            .and_hms_opt(8, 0, 0)
-            .unwrap()
-            .and_utc();
+        let mut date = self.start_date.clone();
+        date.set_ymd(date.year(), month, day);
 
         Ok(date)
     }
 
-    fn parse_at_sentence(&self, sentence: Pair<Rule>) -> DateParsingResult {
+    fn parse_at_sentence(&self, sentence: Pair<Rule>) -> DateParsingResult<T> {
         let mut inner = sentence.into_inner();
         let hour = inner.next().unwrap().as_str().parse::<u32>().unwrap();
         let minute = inner.next().unwrap().as_str().parse::<u32>().unwrap();
 
         let date = {
-            let on_date = {
+            let mut on_date = {
                 if let Some(pair) = inner.next() {
                     self.parse_on_sentence(pair)?
                 } else {
-                    now!()
+                    self.start_date.clone()
                 }
             };
-            let date = NaiveDate::from_ymd_opt(on_date.year(), on_date.month(), on_date.day())
-                .unwrap()
-                .and_hms_opt(hour, minute, 0)
-                .unwrap();
 
-            date
+            on_date.set_hms(hour, minute, 0);
+
+            on_date
         };
 
         Ok(date)
@@ -151,7 +127,7 @@ impl HumanDateParser {
     /// println!("{}", date_parser.parse(input).unwrap().to_string());
     ///
     /// ```
-    pub fn parse(&self, input: impl AsRef<str>) -> DateParsingResult {
+    pub fn parse(&self, input: impl AsRef<str>) -> DateParsingResult<T> {
         let lowercased = input.as_ref().to_lowercase();
         let mut result = match PestHumanDateParser::parse(Rule::SENTENCE, &lowercased) {
             Ok(result) => result,
@@ -171,10 +147,11 @@ impl HumanDateParser {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::date::{Date, SimpleUtcDate};
 
     macro_rules! assert_date_parsing {
         ($input:literal, $expected: literal) => {
-            let date_parser = HumanDateParser::new();
+            let date_parser = HumanDateParser::new(SimpleUtcDate::now());
             let date = date_parser
                 .parse($input)
                 .expect("We should have been able to parse!");
