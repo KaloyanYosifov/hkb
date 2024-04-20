@@ -121,8 +121,9 @@ impl<T: Date + Clone> HumanDateParser<T> {
     ///
     /// Example
     /// ```rust
-    /// use hkb_date::HumanDateParser;
-    /// let date_parser = HumanDateParser::new();
+    /// use hkb_date::{HumanDateParser};
+    /// use hkb_date::date::*;
+    /// let date_parser = HumanDateParser::new(SimpleUtcDate::now());
     /// let input = "In 5 minutes";
     /// println!("{}", date_parser.parse(input).unwrap().to_string());
     ///
@@ -146,12 +147,17 @@ impl<T: Date + Clone> HumanDateParser<T> {
 
 #[cfg(test)]
 mod tests {
+    use chrono::DateTime;
+
     use super::*;
     use crate::date::{Date, SimpleUtcDate};
+    use chrono::Utc;
 
     macro_rules! assert_date_parsing {
         ($input:literal, $expected: literal) => {
-            let date_parser = HumanDateParser::new(SimpleUtcDate::now());
+            let date =
+                SimpleUtcDate::parse_from_str("2024-04-14 08:00:00", "%Y-%m-%d %H:%M:%S").unwrap();
+            let date_parser = HumanDateParser::new(date);
             let date = date_parser
                 .parse($input)
                 .expect("We should have been able to parse!");
