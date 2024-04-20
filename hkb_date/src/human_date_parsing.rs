@@ -147,11 +147,8 @@ impl<T: Date + Clone> HumanDateParser<T> {
 
 #[cfg(test)]
 mod tests {
-    use chrono::DateTime;
-
     use super::*;
     use crate::date::{Date, SimpleUtcDate};
-    use chrono::Utc;
 
     macro_rules! assert_date_parsing {
         ($input:literal, $expected: literal) => {
@@ -169,6 +166,8 @@ mod tests {
     #[test]
     fn it_can_parse_in_sentence() {
         assert_date_parsing!("In 10 minutes", "2024-04-14 08:10:00 UTC");
+        assert_date_parsing!("In 5 days", "2024-04-19 08:00:00 UTC");
+        assert_date_parsing!("In 3 months", "2024-07-14 08:00:00 UTC");
     }
 
     #[test]

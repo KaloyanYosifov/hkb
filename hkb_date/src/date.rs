@@ -3,6 +3,8 @@ use chrono::{
 };
 use thiserror::Error as ThisError;
 
+const MONTHS_IN_A_YEAR: u32 = 12;
+
 #[derive(ThisError, Debug)]
 pub enum DateError {
     #[error("Failed to parse date string")]
@@ -54,18 +56,17 @@ impl Duration {
 
         Ok(duration)
     }
-}
 
-impl Into<TimeDelta> for Duration {
-    fn into(self) -> TimeDelta {
+    pub fn get_value(&self) -> DateUnit {
         match self {
-            Self::Minute(v) => TimeDelta::minutes(v as i64),
-            Self::Hour(v) => TimeDelta::hours(v as i64),
-            Self::Day(v) => TimeDelta::days(v as i64),
-            Self::Week(v) => TimeDelta::weeks(v as i64),
-            Self::Month(v) => TimeDelta::weeks(4 * (v as i64)),
-            Self::Year(v) => TimeDelta::weeks((12 * 4) * (v as i64)),
+            Duration::Minute(v) => v,
+            Duration::Hour(v) => v,
+            Duration::Day(v) => v,
+            Duration::Week(v) => v,
+            Duration::Month(v) => v,
+            Duration::Year(v) => v,
         }
+        .clone()
     }
 }
 
@@ -73,9 +74,53 @@ impl<T: chrono::TimeZone> std::ops::Add<Duration> for DateTime<T> {
     type Output = DateTime<T>;
 
     fn add(self, rhs: Duration) -> Self::Output {
-        let delta: TimeDelta = rhs.into();
+        match rhs {
+            Duration::Minute(v) => self + (TimeDelta::minutes(v as i64)),
+            Duration::Hour(v) => self + (TimeDelta::hours(v as i64)),
+            Duration::Day(v) => self + (TimeDelta::days(v as i64)),
+            Duration::Week(v) => self + (TimeDelta::weeks(v as i64)),
+            Duration::Month(v) => {
+                let mut new_month = self.month() + v;
 
-        self + delta
+                if new_month <= MONTHS_IN_A_YEAR {
+                    return self.with_month(new_month).unwrap();
+                }
+
+                let years_to_add = (new_month / MONTHS_IN_A_YEAR) as i32;
+                let new_date = {
+                    if let Some(date) = self.with_year(self.year() + years_to_add) {
+                        date
+                    } else {
+                        self.with_year(0).unwrap()
+                    }
+                };
+
+                new_month = new_month % MONTHS_IN_A_YEAR;
+
+                if new_month == 0 {
+                    new_month = MONTHS_IN_A_YEAR;
+                }
+
+                if let Some(date) = new_date.with_month(new_month) {
+                    date
+                } else {
+                    new_date.with_month(0).unwrap()
+                }
+            }
+            Duration::Year(v) => {
+                let mut year = (self.year() as u32) + v;
+
+                if year > (i32::MAX as u32) {
+                    year = 0;
+                }
+
+                if let Some(date) = self.with_year(year as i32) {
+                    date
+                } else {
+                    self.with_year(0).unwrap()
+                }
+            }
+        }
     }
 }
 
@@ -481,5 +526,94 @@ fn set_second<Tz: chrono::TimeZone>(
         Ok(date)
     } else {
         Err(DateError::FailedToSetTimeUnit("second".to_string(), second))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use chrono::NaiveDateTime;
+
+    macro_rules! assert_correct_date_time_from_duration {
+        ($expected_date:literal, $duration:expr) => {
+            let date = NaiveDateTime::parse_from_str("2024-04-14 08:00:00", "%Y-%m-%d %H:%M:%S")
+                .unwrap()
+                .and_utc();
+
+            assert_eq!($expected_date, (date + $duration).to_string());
+        };
+    }
+
+    // Sanity checks below (even though chrono has test cases for these below we do a sanity check)
+    // to verify we are passing correct duration
+
+    #[test]
+    fn minute_duration_can_be_added_to_date_time() {
+        assert_correct_date_time_from_duration!("2024-04-14 08:01:00 UTC", Duration::Minute(1));
+        assert_correct_date_time_from_duration!("2024-04-14 08:05:00 UTC", Duration::Minute(5));
+        assert_correct_date_time_from_duration!("2024-04-14 08:10:00 UTC", Duration::Minute(10));
+        assert_correct_date_time_from_duration!("2024-04-14 08:15:00 UTC", Duration::Minute(15));
+        assert_correct_date_time_from_duration!("2024-04-14 08:20:00 UTC", Duration::Minute(20));
+        assert_correct_date_time_from_duration!("2024-04-14 08:25:00 UTC", Duration::Minute(25));
+        assert_correct_date_time_from_duration!("2024-04-14 08:30:00 UTC", Duration::Minute(30));
+        assert_correct_date_time_from_duration!("2024-04-14 09:00:00 UTC", Duration::Minute(60));
+        assert_correct_date_time_from_duration!("2024-04-14 09:05:00 UTC", Duration::Minute(65));
+        assert_correct_date_time_from_duration!("2024-04-14 09:10:00 UTC", Duration::Minute(70));
+        assert_correct_date_time_from_duration!("2024-04-14 09:30:00 UTC", Duration::Minute(90));
+        assert_correct_date_time_from_duration!("2024-04-15 08:00:00 UTC", Duration::Minute(1440));
+    }
+
+    #[test]
+    fn hour_duration_can_be_added_to_date_time() {
+        assert_correct_date_time_from_duration!("2024-04-14 09:00:00 UTC", Duration::Hour(1));
+        assert_correct_date_time_from_duration!("2024-04-14 13:00:00 UTC", Duration::Hour(5));
+        assert_correct_date_time_from_duration!("2024-04-14 18:00:00 UTC", Duration::Hour(10));
+        assert_correct_date_time_from_duration!("2024-04-14 23:00:00 UTC", Duration::Hour(15));
+        assert_correct_date_time_from_duration!("2024-04-15 00:00:00 UTC", Duration::Hour(16));
+        assert_correct_date_time_from_duration!("2024-04-15 01:00:00 UTC", Duration::Hour(17));
+        assert_correct_date_time_from_duration!("2024-04-15 08:00:00 UTC", Duration::Hour(24));
+        assert_correct_date_time_from_duration!("2024-04-16 08:00:00 UTC", Duration::Hour(48));
+        assert_correct_date_time_from_duration!("2024-04-21 08:00:00 UTC", Duration::Hour(168));
+    }
+
+    #[test]
+    fn week_duration_can_be_added_to_date_time() {
+        assert_correct_date_time_from_duration!("2024-04-21 08:00:00 UTC", Duration::Week(1));
+        assert_correct_date_time_from_duration!("2024-05-19 08:00:00 UTC", Duration::Week(5));
+        assert_correct_date_time_from_duration!("2024-06-23 08:00:00 UTC", Duration::Week(10));
+        assert_correct_date_time_from_duration!("2024-10-13 08:00:00 UTC", Duration::Week(26));
+        assert_correct_date_time_from_duration!("2025-04-13 08:00:00 UTC", Duration::Week(52));
+    }
+
+    #[test]
+    fn month_duration_can_be_added_to_date_time() {
+        assert_correct_date_time_from_duration!("2024-05-14 08:00:00 UTC", Duration::Month(1));
+        assert_correct_date_time_from_duration!("2024-06-14 08:00:00 UTC", Duration::Month(2));
+        assert_correct_date_time_from_duration!("2024-07-14 08:00:00 UTC", Duration::Month(3));
+        assert_correct_date_time_from_duration!("2024-08-14 08:00:00 UTC", Duration::Month(4));
+        assert_correct_date_time_from_duration!("2024-09-14 08:00:00 UTC", Duration::Month(5));
+        assert_correct_date_time_from_duration!("2024-10-14 08:00:00 UTC", Duration::Month(6));
+        assert_correct_date_time_from_duration!("2024-11-14 08:00:00 UTC", Duration::Month(7));
+        assert_correct_date_time_from_duration!("2024-12-14 08:00:00 UTC", Duration::Month(8));
+        assert_correct_date_time_from_duration!("2025-01-14 08:00:00 UTC", Duration::Month(9));
+        assert_correct_date_time_from_duration!("2025-02-14 08:00:00 UTC", Duration::Month(10));
+        assert_correct_date_time_from_duration!("2025-03-14 08:00:00 UTC", Duration::Month(11));
+        assert_correct_date_time_from_duration!("2025-04-14 08:00:00 UTC", Duration::Month(12));
+        assert_correct_date_time_from_duration!("2025-05-14 08:00:00 UTC", Duration::Month(13));
+    }
+
+    #[test]
+    fn year_duration_can_be_added_to_date_time() {
+        assert_correct_date_time_from_duration!("2025-04-14 08:00:00 UTC", Duration::Year(1));
+        assert_correct_date_time_from_duration!("2029-04-14 08:00:00 UTC", Duration::Year(5));
+        assert_correct_date_time_from_duration!("2034-04-14 08:00:00 UTC", Duration::Year(10));
+        assert_correct_date_time_from_duration!("2039-04-14 08:00:00 UTC", Duration::Year(15));
+        assert_correct_date_time_from_duration!("2044-04-14 08:00:00 UTC", Duration::Year(20));
+        assert_correct_date_time_from_duration!("2049-04-14 08:00:00 UTC", Duration::Year(25));
+        assert_correct_date_time_from_duration!("2054-04-14 08:00:00 UTC", Duration::Year(30));
+        assert_correct_date_time_from_duration!(
+            "0000-04-14 08:00:00 UTC",
+            Duration::Year((i32::MAX - 2025) as u32)
+        );
     }
 }
