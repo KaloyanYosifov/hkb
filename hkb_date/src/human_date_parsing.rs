@@ -72,7 +72,7 @@ impl<T: Date + Clone> HumanDateParser<T> {
         let duration = Duration::from_string(duration, duration_value as u32)?;
         let mut date = self.start_date.clone();
 
-        date.add_duration(duration);
+        date.add_duration(duration)?;
 
         Ok(date)
     }
@@ -90,7 +90,8 @@ impl<T: Date + Clone> HumanDateParser<T> {
             (day, month)
         };
         let mut date = self.start_date.clone();
-        date.set_ymd(date.year(), month, day);
+
+        date.set_ymd(date.year(), month, day)?;
 
         Ok(date)
     }
@@ -109,7 +110,7 @@ impl<T: Date + Clone> HumanDateParser<T> {
                 }
             };
 
-            on_date.set_hms(hour, minute, 0);
+            on_date.set_hms(hour, minute, 0)?;
 
             on_date
         };

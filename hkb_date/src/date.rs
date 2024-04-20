@@ -232,9 +232,6 @@ impl Date for SimpleUtcDate {
     }
 
     fn set_ymd(&mut self, year: i32, month: DateUnit, date: DateUnit) -> DateResult {
-        let time =
-            NaiveDate::from_ymd_opt(year, month, date).ok_or_else(|| DateError::FailedToSetTime)?;
-
         self.date = NaiveDate::from_ymd_opt(year, month, date)
             .ok_or_else(|| DateError::FailedToSetTime)?
             .and_hms_opt(self.date.hour(), self.date.minute(), self.date.second())
@@ -262,9 +259,6 @@ impl Date for SimpleUtcDate {
         minute: DateUnit,
         second: DateUnit,
     ) -> DateResult {
-        let time =
-            NaiveDate::from_ymd_opt(year, month, date).ok_or_else(|| DateError::FailedToSetTime)?;
-
         self.date = NaiveDate::from_ymd_opt(year, month, date)
             .ok_or_else(|| DateError::FailedToSetTime)?
             .and_hms_opt(hour, minute, second)
@@ -380,9 +374,6 @@ impl Date for SimpleLocalDate {
     }
 
     fn set_ymd(&mut self, year: i32, month: DateUnit, date: DateUnit) -> DateResult {
-        let time =
-            NaiveDate::from_ymd_opt(year, month, date).ok_or_else(|| DateError::FailedToSetTime)?;
-
         // TODO: Fix unwrapping here
         self.date = NaiveDate::from_ymd_opt(year, month, date)
             .ok_or_else(|| DateError::FailedToSetTime)?
@@ -412,9 +403,6 @@ impl Date for SimpleLocalDate {
         minute: DateUnit,
         second: DateUnit,
     ) -> DateResult {
-        let time =
-            NaiveDate::from_ymd_opt(year, month, date).ok_or_else(|| DateError::FailedToSetTime)?;
-
         // TODO: Fix unwrapping here
         self.date = NaiveDate::from_ymd_opt(year, month, date)
             .ok_or_else(|| DateError::FailedToSetTime)?
