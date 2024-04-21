@@ -79,7 +79,7 @@ impl<'a> Input<'a> {
             }
             KeyCode::Backspace => {
                 if state.buffer.len() > 0 {
-                    state.buffer = (&state.buffer[0..state.buffer.len() - 1]).to_string();
+                    state.buffer = (&state.buffer[0..state.buffer.len() - 1]).to_owned();
                     state.look_offset = state.buffer.len();
                 }
             }

@@ -29,6 +29,14 @@ impl ButtonState {
     pub fn is_clicked(&self) -> bool {
         self.clicked
     }
+
+    pub fn click(&mut self) {
+        self.clicked = true;
+    }
+
+    pub fn unclick(&mut self) {
+        self.clicked = false;
+    }
 }
 
 impl Focusable for ButtonState {
