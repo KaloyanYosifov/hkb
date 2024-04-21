@@ -32,7 +32,7 @@ const MONTHS: [&str; 12] = [
     "december",
 ];
 
-type DateParsingResult<T: Date> = Result<T, DateParsingError>;
+type DateParsingResult<T> = Result<T, DateParsingError>;
 
 fn ctoi(char: char) -> u8 {
     // 48 is the ascii code of 0
