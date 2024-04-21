@@ -14,7 +14,7 @@ use super::{CreateReminderData, Message, RemindersView};
 pub struct RemindersCreate {
     error_message: Option<String>,
     focused_component: usize,
-    title_input: InputState,
+    message_input: InputState,
     reminder_date_input: InputState,
     submit_button: ButtonState,
     parsed_date: Option<SimpleLocalDate>,
@@ -26,7 +26,7 @@ impl Default for RemindersCreate {
             parsed_date: None,
             error_message: None,
             focused_component: 0,
-            title_input: InputState::default(),
+            message_input: InputState::default(),
             reminder_date_input: InputState::default(),
             submit_button: ButtonState::default(),
         }
@@ -41,7 +41,7 @@ impl RemindersCreate {
             [Constraint::Length(3), Constraint::Length(3)],
         )
         .split(area);
-        Input::new("Title").render(frame, &mut self.title_input, input_layout[0]);
+        Input::new("Title").render(frame, &mut self.message_input, input_layout[0]);
         Input::new("Reminder Date").render(frame, &mut self.reminder_date_input, input_layout[1]);
     }
 
@@ -88,7 +88,7 @@ impl RemindersCreate {
     }
 
     fn validate(&mut self) -> bool {
-        if self.title_input.buffer.len() <= 0 {
+        if self.message_input.buffer.len() <= 0 {
             self.error_message = Some("Title Input is required!".to_owned());
         } else if self.reminder_date_input.buffer.len() <= 0 {
             self.error_message = Some("Remidner Date Input is required!".to_owned());
@@ -120,7 +120,7 @@ impl RemindersView for RemindersCreate {
         if self.submit_button.is_clicked() {
             if self.validate() {
                 let data = CreateReminderData {
-                    message: self.title_input.buffer.to_owned(),
+                    message: self.message_input.buffer.to_owned(),
                     date: self.parsed_date.take().unwrap(),
                 };
                 return Some(Message::CreateReminder(data));
@@ -130,7 +130,7 @@ impl RemindersView for RemindersCreate {
         }
 
         let mut focusables: Vec<&mut dyn Focusable> = vec![
-            &mut self.title_input,
+            &mut self.message_input,
             &mut self.reminder_date_input,
             &mut self.submit_button,
         ];
