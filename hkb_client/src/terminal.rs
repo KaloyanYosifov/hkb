@@ -2,6 +2,7 @@ use crossterm::{
     terminal::{self as crossterminal},
     ExecutableCommand,
 };
+use hkb_core::logger::{error, info};
 use ratatui::prelude::{CrosstermBackend, Terminal as TuiTerminal};
 use std::io::{self, stdout, Stdout};
 use std::panic;
@@ -23,18 +24,25 @@ pub fn init() -> Result<Terminal, TerminalError> {
         close().unwrap_or_default();
 
         // Print panic info
-        eprintln!("{e}");
+        eprintln!("Something went horribly wrong. Check the logs!");
+        error!("PANIC: {e}");
     }));
 
     stdout().execute(crossterminal::EnterAlternateScreen)?;
     crossterminal::enable_raw_mode()?;
 
-    Ok(TuiTerminal::new(CrosstermBackend::new(stdout()))?)
+    let terminal = TuiTerminal::new(CrosstermBackend::new(stdout()))?;
+
+    info!("Terminal initialized!");
+
+    Ok(terminal)
 }
 
 pub fn close() -> Result<(), TerminalError> {
     {
         if crossterminal::disable_raw_mode().is_err() {
+            error!("Failed to disable raw mode :/");
+
             return Err(TerminalError::FailedToCloseTerminal);
         }
 
@@ -42,9 +50,13 @@ pub fn close() -> Result<(), TerminalError> {
             .execute(crossterminal::LeaveAlternateScreen)
             .is_err()
         {
+            error!("Failed to leave alternate screen :/");
+
             return Err(TerminalError::FailedToCloseTerminal);
         }
     }
+
+    info!("Terminal closed!");
 
     Ok(())
 }

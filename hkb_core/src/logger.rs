@@ -7,7 +7,17 @@ use log4rs::encode::pattern::PatternEncoder;
 use log4rs::Config;
 
 pub fn init() {
-    let log_line_pattern = "{d(%Y-%m-%d %H:%M:%S)} | {({l}):5.5} | {f}:{L} — {m}{n}";
+    let log_line_pattern = {
+        #[cfg(debug_assertions)]
+        {
+            "{d(%Y-%m-%d %H:%M:%S)} | {({l}):5.5} | {f}:{L} — {m}{n}"
+        }
+
+        #[cfg(not(debug_assertions))]
+        {
+            "{d(%Y-%m-%d %H:%M:%S)} | {({l}):5.5} | — {m}{n}"
+        }
+    };
     let file_appender = {
         #[cfg(debug_assertions)]
         {
@@ -45,4 +55,6 @@ pub fn init() {
         .unwrap();
 
     log4rs::init_config(config).unwrap();
+
+    info!("Logger Initialized");
 }

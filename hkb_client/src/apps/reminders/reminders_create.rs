@@ -1,4 +1,5 @@
 use crossterm::event::KeyCode;
+use hkb_core::logger::{debug, info};
 use hkb_date::date::SimpleLocalDate;
 use hkb_date::HumanDateParser;
 use ratatui::prelude::{Constraint, Direction, Frame, Layout, Rect};
@@ -102,7 +103,10 @@ impl RemindersCreate {
 
                     return true;
                 }
-                _ => self.error_message = Some("Failed to parse date!".to_owned()),
+                Err(e) => {
+                    debug!("[REMINDERS_CREATE]: Failed to parse date. Err: {e:?}");
+                    self.error_message = Some("Failed to parse date!".to_owned());
+                }
             }
         }
 
@@ -112,6 +116,8 @@ impl RemindersCreate {
 
 impl RemindersView for RemindersCreate {
     fn init(&mut self) {
+        info!("[REMINDERS_CREATE]: Create reminder view initialized.");
+
         app_state::set_editing(true);
         app_state::disable_navigation_events();
     }

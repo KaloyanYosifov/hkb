@@ -166,7 +166,7 @@ pub trait Date {
     fn to_chrono_date(&self) -> Self::DateTime;
 }
 
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub struct SimpleUtcDate {
     date: DateTime<Utc>,
 }
@@ -306,7 +306,7 @@ impl Date for SimpleUtcDate {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub struct SimpleLocalDate {
     date: DateTime<Local>,
 }

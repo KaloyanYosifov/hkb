@@ -1,4 +1,5 @@
 use crossterm::event::KeyCode;
+use hkb_core::logger::info;
 use ratatui::prelude::{Constraint, Direction, Frame, Layout, Rect};
 use ratatui::widgets::{Block, Borders, List};
 
@@ -16,6 +17,7 @@ impl Default for RemindersList {
 
 impl RemindersView for RemindersList {
     fn init(&mut self) {
+        info!("[REMINDERS_LIST]: List reminders view initialized.");
         app_state::set_editing(false);
         app_state::enable_navigation_events();
     }
