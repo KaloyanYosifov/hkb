@@ -36,9 +36,6 @@ fn main() -> RenderResult {
     logger_init();
     terminal.clear()?;
 
-    info!("hello");
-    debug!("Sure!");
-
     while !should_quit {
         while event::poll(Duration::ZERO).unwrap() {
             if let Ok(event) = event::read() {
