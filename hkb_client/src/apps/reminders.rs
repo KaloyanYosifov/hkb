@@ -1,3 +1,4 @@
+use hkb_date::date::{SimpleLocalDate, SimpleUtcDate};
 use ratatui::prelude::{Constraint, Direction, Frame, Layout, Rect};
 
 use self::reminders_create::RemindersCreate;
@@ -26,8 +27,14 @@ impl Into<Box<dyn RemindersView>> for View {
     }
 }
 
+struct CreateReminderData {
+    message: String,
+    date: SimpleLocalDate,
+}
+
 enum Message {
     ChangeView(View),
+    CreateReminder(CreateReminderData),
 }
 
 pub struct RemindersApp {
@@ -49,6 +56,11 @@ impl RemindersApp {
             Some(m) => match m {
                 Message::ChangeView(view) => {
                     self.current_view = view.into();
+                    self.current_view.init();
+                }
+                Message::CreateReminder(message) => {
+                    // TODO: implement create reminder
+                    self.current_view = View::List.into();
                     self.current_view.init();
                 }
             },

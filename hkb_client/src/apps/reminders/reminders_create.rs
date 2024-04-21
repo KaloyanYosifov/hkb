@@ -1,5 +1,5 @@
 use crossterm::event::KeyCode;
-use hkb_date::date::SimpleUtcDate;
+use hkb_date::date::SimpleLocalDate;
 use hkb_date::HumanDateParser;
 use ratatui::prelude::{Constraint, Direction, Frame, Layout, Rect};
 use ratatui::style::{Color, Style};
@@ -9,7 +9,7 @@ use crate::components::{Button, ButtonState, Input, InputState, StatefulComponen
 use crate::utils::centered_layout;
 use crate::{app_state, events, focus::Focusable};
 
-use super::{Message, RemindersView};
+use super::{CreateReminderData, Message, RemindersView};
 
 pub struct RemindersCreate {
     error_message: Option<String>,
@@ -17,7 +17,7 @@ pub struct RemindersCreate {
     title_input: InputState,
     reminder_date_input: InputState,
     submit_button: ButtonState,
-    parsed_date: Option<SimpleUtcDate>,
+    parsed_date: Option<SimpleLocalDate>,
 }
 
 impl Default for RemindersCreate {
@@ -93,7 +93,7 @@ impl RemindersCreate {
         } else if self.reminder_date_input.buffer.len() <= 0 {
             self.error_message = Some("Remidner Date Input is required!".to_owned());
         } else {
-            let parser = HumanDateParser::new(SimpleUtcDate::now());
+            let parser = HumanDateParser::new(SimpleLocalDate::now());
 
             match parser.parse(&self.reminder_date_input.buffer) {
                 Ok(date) => {
@@ -119,7 +119,11 @@ impl RemindersView for RemindersCreate {
     fn update(&mut self) -> Option<Message> {
         if self.submit_button.is_clicked() {
             if self.validate() {
-                return Some(Message::ChangeView(super::View::List));
+                let data = CreateReminderData {
+                    message: self.title_input.buffer.to_owned(),
+                    date: self.parsed_date.take().unwrap(),
+                };
+                return Some(Message::CreateReminder(data));
             }
 
             self.submit_button.unclick();
