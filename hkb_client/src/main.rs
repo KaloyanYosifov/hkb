@@ -1,6 +1,7 @@
 use app_state::AppView;
 use components::{Component, Navigation};
 use crossterm::event::{self, Event, KeyCode};
+use hkb_core::logger::{debug, info, init as logger_init};
 use ratatui::prelude::{Constraint, Direction, Layout};
 use ratatui::widgets::{Block, Borders};
 use std::{io::Error as IOError, thread, time::Duration};
@@ -32,7 +33,11 @@ fn main() -> RenderResult {
     let mut navigation =
         Navigation::new("HKB".to_string(), vec![AppView::Main, AppView::Reminders]);
 
+    logger_init();
     terminal.clear()?;
+
+    info!("hello");
+    debug!("Sure!");
 
     while !should_quit {
         while event::poll(Duration::ZERO).unwrap() {
