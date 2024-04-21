@@ -7,4 +7,5 @@ edition = "2021"
 crossterm = { version = "0.27.0" }
 parking_lot = { version = "0.12.1" }
 ratatui = { version = "0.26.1" }
+hkb_core = { path = "../hkb_core", version = "0.1.0" }
 thiserror = { workspace = true }
