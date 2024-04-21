@@ -186,5 +186,6 @@ mod tests {
     fn it_can_parse_on_sentence() {
         assert_date_parsing!("On 5th of May", "2024-05-05 08:00:00 UTC");
         assert_date_parsing!("On the 5th of May", "2024-05-05 08:00:00 UTC");
+        assert_date_parsing!("On the 1st of January", "2024-01-01 08:00:00 UTC");
     }
 }
