@@ -1,3 +1,5 @@
+use hkb_date::date::SimpleLocalDate;
+
 #[derive(Debug)]
 struct ReminderData {
     message: String,
@@ -10,4 +12,6 @@ struct CreateReminderData {
     date: SimpleLocalDate,
 }
 
-pub fn create_a_reminder(data: CreateReminderData) -> ReminderData {}
+pub fn create_a_reminder(data: CreateReminderData) -> ReminderData {
+    todo!("Implement");
+}
