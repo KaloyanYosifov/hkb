@@ -1,6 +1,6 @@
 use hkb_core::logger::{debug, info};
-use hkb_date::date::{SimpleLocalDate, SimpleUtcDate};
-use ratatui::prelude::{Constraint, Direction, Frame, Layout, Rect};
+use hkb_date::date::SimpleLocalDate;
+use ratatui::prelude::{Frame, Rect};
 
 use self::reminders_create::RemindersCreate;
 use self::reminders_list::RemindersList;
@@ -64,7 +64,6 @@ impl RemindersApp {
                     info!("[REMINDERS]: Creating a reminder.");
                     debug!("[REMINDERS]: Received a message to create a reminder with {message:?}");
 
-                    // TODO: implement create reminder
                     self.current_view = View::List.into();
                     self.current_view.init();
                 }

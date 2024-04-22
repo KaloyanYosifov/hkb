@@ -14,6 +14,7 @@ mod events;
 mod focus;
 mod terminal;
 mod utils;
+mod actions;
 
 #[derive(ThisError, Debug)]
 pub enum RendererError {
