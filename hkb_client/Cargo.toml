@@ -9,4 +9,5 @@ ratatui = { version = "0.26.1" }
 thiserror = { workspace = true }
 parking_lot = { workspace = true }
 hkb_date = { path = "../hkb_date", version = "0.1.0" }
+diesel_migrations = { version = "2.1.0" }
 hkb_core = { path = "../hkb_core", version = "0.1.0", features = ["sqlite-database"] }

@@ -226,11 +226,9 @@ dependencies = [
  "bitflags 2.5.0",
  "byteorder",
  "diesel_derives",
- "itoa",
  "libsqlite3-sys",
  "mysqlclient-sys",
  "percent-encoding",
- "pq-sys",
  "time",
  "url",
 ]
@@ -367,6 +365,7 @@ name = "hkb_client"
 version = "0.1.0"
 dependencies = [
  "crossterm",
+ "diesel_migrations",
  "hkb_core",
  "hkb_date",
  "parking_lot",
@@ -385,6 +384,7 @@ dependencies = [
  "log",
  "log4rs",
  "parking_lot",
+ "thiserror",
 ]
 
 [[package]]
@@ -746,15 +746,6 @@ name = "ppv-lite86"
 version = "0.2.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5b40af805b3121feab8a3c29f04d8ad262fa8e0561883e7653e024ae4479e6de"
-
-[[package]]
-name = "pq-sys"
-version = "0.4.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "31c0052426df997c0cbd30789eb44ca097e3541717a7b8fa36b1c464ee7edebd"
-dependencies = [
- "vcpkg",
-]
 
 [[package]]
 name = "proc-macro2"
