@@ -8,3 +8,4 @@ members = [
 
 [workspace.dependencies]
 thiserror = { version = "1.0.56" }
+parking_lot = { version = "0.12.1" }

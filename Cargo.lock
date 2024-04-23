@@ -378,11 +378,13 @@ dependencies = [
 name = "hkb_core"
 version = "0.1.0"
 dependencies = [
+ "cfg-if",
  "diesel",
  "diesel_migrations",
  "dirs",
  "log",
  "log4rs",
+ "parking_lot",
 ]
 
 [[package]]

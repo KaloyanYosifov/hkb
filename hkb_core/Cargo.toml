@@ -8,9 +8,11 @@ edition = "2021"
 [dependencies]
 log = { version = "0.4.21" }
 dirs = { version = "5.0.1" }
-log4rs = { version = "1.3.0", features = ["pattern_encoder", "file_appender"] }
+cfg-if = { version = "1.0.0" }
+parking_lot = { workspace = true }
 diesel = { version = "2.1.6", optional = true }
 diesel_migrations = { version = "2.1.0", optional = true }
+log4rs = { version = "1.3.0", features = ["pattern_encoder", "file_appender"] }
 
 [features]
 sqlite-database = ["dep:diesel_migrations", "diesel/sqlite"]
