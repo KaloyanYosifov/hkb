@@ -1,7 +1,7 @@
 use cfg_if::cfg_if;
-use diesel::{migration, result::Error as DieselResultError, Connection, ConnectionError};
+use diesel::{result::Error as DieselResultError, Connection, ConnectionError};
 use diesel_migrations::{EmbeddedMigrations, MigrationHarness};
-use log::debug;
+use log::{debug, error};
 use parking_lot::Mutex;
 use thiserror::Error as ThisError;
 
@@ -48,20 +48,23 @@ pub fn init_database(url: &str, migrations: Vec<EmbeddedMigrations>) -> Result<(
         }
     }?;
 
-    debug!("Running migrations");
+    debug!(target: "DATABASE", "Running migrations");
     // TODO: maybe we can use iter.enumurate() for this?
     // for now we just use a variable as it is easy
     let mut i = 1;
     for migration in migrations {
-        debug!("Starting migration {i}.");
+        debug!(target: "DATABASE", "Starting migration {i}.");
+
         match connection.run_pending_migrations(migration) {
             Err(e) => {
-                println!("{e:?}");
+                error!(target: "DATABASE", "Failed to run migration: {e}");
+
                 return Err(DatabaseError::FailedToRunMigrations);
             }
             _ => {}
         };
-        debug!("Migration {i} finished !");
+
+        debug!(target: "DATABASE", "Migration {i} finished !");
 
         i += 1;
     }
@@ -78,6 +81,8 @@ pub fn within_database<T, F: FnOnce(&mut DatabaseConnection) -> DatabaseResult<T
     let mut conn = GLOBAL_CONNECTION.lock();
 
     if let Some(connection) = (*conn).as_mut() {
+        debug!("Found connection. Executing database callback.");
+
         callback(connection)
     } else {
         Err(DatabaseError::DatabaseNotInitialized)

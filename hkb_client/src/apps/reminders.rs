@@ -61,8 +61,8 @@ impl RemindersApp {
                     self.current_view.init();
                 }
                 Message::CreateReminder(message) => {
-                    info!("[REMINDERS]: Creating a reminder.");
-                    debug!("[REMINDERS]: Received a message to create a reminder with {message:?}");
+                    info!(target: "REMINDERS", "Creating a reminder.");
+                    debug!(target: "REMINDERS", "Received a message to create a reminder with {message:?}");
 
                     self.current_view = View::List.into();
                     self.current_view.init();

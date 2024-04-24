@@ -10,12 +10,12 @@ pub fn init() {
     let log_line_pattern = {
         #[cfg(debug_assertions)]
         {
-            "{d(%Y-%m-%d %H:%M:%S)} | {({l}):5.5} | {f}:{L} — {m}{n}"
+            "{d(%Y-%m-%d %H:%M:%S)} | {({l}):5.5} | {f}:{L} — [{t}]: {m}{n}"
         }
 
         #[cfg(not(debug_assertions))]
         {
-            "{d(%Y-%m-%d %H:%M:%S)} | {({l}):5.5} | — {m}{n}"
+            "{d(%Y-%m-%d %H:%M:%S)} | {({l}):5.5} | [{t}]: {m}{n}"
         }
     };
     let file_appender = {

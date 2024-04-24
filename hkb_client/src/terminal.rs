@@ -25,7 +25,7 @@ pub fn init() -> Result<Terminal, TerminalError> {
 
         // Print panic info
         eprintln!("Something went horribly wrong. Check the logs!");
-        error!("PANIC: {e}");
+        error!(target: "TERMINAL", "PANIC: {e}");
     }));
 
     stdout().execute(crossterminal::EnterAlternateScreen)?;
@@ -33,7 +33,7 @@ pub fn init() -> Result<Terminal, TerminalError> {
 
     let terminal = TuiTerminal::new(CrosstermBackend::new(stdout()))?;
 
-    info!("Terminal initialized!");
+    info!(target: "TERMINAL", "Terminal initialized!");
 
     Ok(terminal)
 }
@@ -41,7 +41,7 @@ pub fn init() -> Result<Terminal, TerminalError> {
 pub fn close() -> Result<(), TerminalError> {
     {
         if crossterminal::disable_raw_mode().is_err() {
-            error!("Failed to disable raw mode :/");
+            error!(target: "TERMINAL", "Failed to disable raw mode :/");
 
             return Err(TerminalError::FailedToCloseTerminal);
         }
@@ -50,13 +50,13 @@ pub fn close() -> Result<(), TerminalError> {
             .execute(crossterminal::LeaveAlternateScreen)
             .is_err()
         {
-            error!("Failed to leave alternate screen :/");
+            error!(target: "TERMINAL", "Failed to leave alternate screen :/");
 
             return Err(TerminalError::FailedToCloseTerminal);
         }
     }
 
-    info!("Terminal closed!");
+    info!(target: "TERMINAL", "Terminal closed!");
 
     Ok(())
 }

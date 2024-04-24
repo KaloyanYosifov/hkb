@@ -17,7 +17,7 @@ impl Default for RemindersList {
 
 impl RemindersView for RemindersList {
     fn init(&mut self) {
-        info!("[REMINDERS_LIST]: List reminders view initialized.");
+        info!(target: "REMINDERS_LIST", "List reminders view initialized.");
         app_state::set_editing(false);
         app_state::enable_navigation_events();
     }
