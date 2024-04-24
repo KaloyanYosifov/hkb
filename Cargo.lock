@@ -381,6 +381,7 @@ dependencies = [
  "diesel",
  "diesel_migrations",
  "dirs",
+ "hkb_date",
  "log",
  "log4rs",
  "parking_lot",

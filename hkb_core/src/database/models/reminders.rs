@@ -11,7 +11,7 @@ use diesel::prelude::{Insertable, Queryable, Selectable};
     feature = "sqlite-database",
     diesel(check_for_backend(diesel::sqlite::Sqlite))
 )]
-pub struct Reminder {
+pub(crate) struct Reminder {
     pub id: i64,
     pub date: String,
     pub note: String,
@@ -19,7 +19,7 @@ pub struct Reminder {
 
 #[derive(Insertable)]
 #[diesel(table_name = reminders)]
-pub struct CreateReminderData {
+pub(crate) struct CreateReminder {
     pub date: String,
     pub note: String,
 }
