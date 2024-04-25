@@ -1,5 +1,8 @@
 use crate::database::schema::reminders;
-use diesel::prelude::{Insertable, Queryable, Selectable};
+use diesel::{
+    prelude::{Insertable, Queryable, Selectable},
+    query_builder::AsChangeset,
+};
 
 #[derive(Debug, Queryable, Selectable)]
 #[diesel(table_name = reminders)]
@@ -15,6 +18,13 @@ pub(crate) struct Reminder {
     pub id: i64,
     pub date: String,
     pub note: String,
+}
+
+#[derive(Debug, AsChangeset)]
+#[diesel(table_name = reminders)]
+pub(crate) struct UpdateReminder {
+    pub note: Option<String>,
+    pub date: Option<String>,
 }
 
 #[derive(Insertable)]

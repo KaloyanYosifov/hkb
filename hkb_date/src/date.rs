@@ -128,7 +128,7 @@ pub type DateResult = Result<(), DateError>;
 
 type DateUnit = u32;
 
-pub trait Date {
+pub trait Date: ToString {
     type DateTime;
 
     fn add_duration(&mut self, duration: Duration) -> DateResult;
@@ -160,8 +160,6 @@ pub trait Date {
 
     fn get_timezone(&self) -> Timezone;
 
-    fn to_string(&self) -> String;
-
     #[cfg(feature = "chrono")]
     fn to_chrono_date(&self) -> Self::DateTime;
 }
@@ -174,6 +172,12 @@ pub struct SimpleUtcDate {
 impl SimpleUtcDate {
     pub fn now() -> Self {
         Self { date: Utc::now() }
+    }
+
+    pub fn parse_from_rfc3339(date: impl AsRef<str>) -> Result<Self, DateError> {
+        let date = chrono::DateTime::parse_from_rfc3339(date.as_ref())?.to_utc();
+
+        Ok(Self { date })
     }
 
     pub fn parse_from_str(
@@ -296,13 +300,15 @@ impl Date for SimpleUtcDate {
         Timezone::UTC
     }
 
-    fn to_string(&self) -> String {
-        self.date.to_string()
-    }
-
     #[cfg(feature = "chrono")]
     fn to_chrono_date(&self) -> Self::DateTime {
         self.date.clone()
+    }
+}
+
+impl ToString for SimpleUtcDate {
+    fn to_string(&self) -> String {
+        self.date.to_rfc3339()
     }
 }
 
@@ -314,6 +320,15 @@ pub struct SimpleLocalDate {
 impl SimpleLocalDate {
     pub fn now() -> Self {
         Self { date: Local::now() }
+    }
+
+    pub fn parse_from_rfc3339(date: impl AsRef<str>) -> Result<Self, DateError> {
+        let date = chrono::DateTime::parse_from_rfc3339(date.as_ref())?
+            .naive_local()
+            .and_local_timezone(Local)
+            .unwrap();
+
+        Ok(Self { date })
     }
 
     pub fn parse_from_str(
@@ -442,15 +457,18 @@ impl Date for SimpleLocalDate {
         Timezone::Local
     }
 
-    fn to_string(&self) -> String {
-        self.date.to_string()
-    }
-
     #[cfg(feature = "chrono")]
     fn to_chrono_date(&self) -> Self::DateTime {
         self.date.clone()
     }
 }
+
+impl ToString for SimpleLocalDate {
+    fn to_string(&self) -> String {
+        self.date.to_rfc3339()
+    }
+}
+
 fn set_year<Tz: chrono::TimeZone>(
     date: DateTime<Tz>,
     year: i32,
