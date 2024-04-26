@@ -1,5 +1,6 @@
-use diesel::{dsl::Order, ExpressionMethods, QueryDsl, RunQueryDsl, SelectableHelper};
-use hkb_date::date::{Date, SimpleLocalDate};
+use diesel::{ExpressionMethods, QueryDsl, RunQueryDsl, SelectableHelper};
+use hkb_date::date::SimpleLocalDate;
+use log::debug;
 
 use crate::database::{
     self,
@@ -82,10 +83,14 @@ pub fn fetch_reminders() -> DatabaseResult<Vec<ReminderData>> {
 
 pub fn fetch_reminder(id: i64) -> DatabaseResult<ReminderData> {
     database::within_database(|conn| {
+        debug!(target: "REMINDERS_SERVICE", "Fetching reminder with id {id}");
+
         let reminder = reminders_dsl::reminders
             .find(id)
             .select(Reminder::as_select())
             .first(conn)?;
+
+        debug!(target: "REMINDERS_SERVICE", "Found reminder {reminder:?}");
 
         Ok(reminder.into())
     })
@@ -93,11 +98,15 @@ pub fn fetch_reminder(id: i64) -> DatabaseResult<ReminderData> {
 
 pub fn create_reminder(reminder: CreateReminderData) -> DatabaseResult<ReminderData> {
     database::within_database(|conn| {
+        debug!(target: "REMINDERS_SERVICE", "Creating reminder: {reminder:?}");
+
         let create_reminder: CreateReminder = reminder.into();
         let created_reminder = diesel::insert_into(reminders::table)
             .values(&create_reminder)
             .returning(Reminder::as_returning())
             .get_result(conn)?;
+
+        debug!(target: "REMINDERS_SERVICE", "Reminder created. ID is: : {}", created_reminder.id);
 
         Ok(created_reminder.into())
     })
@@ -105,6 +114,8 @@ pub fn create_reminder(reminder: CreateReminderData) -> DatabaseResult<ReminderD
 
 pub fn update_reminder(reminder: UpdateReminderData) -> DatabaseResult<ReminderData> {
     database::within_database(|conn| {
+        debug!(target: "REMINDERS_SERVICE", "Updating reminder: {reminder:?}");
+
         let id = reminder.id;
         let update_reminder: UpdateReminder = reminder.into();
         let updated_reminder = diesel::update(reminders_dsl::reminders.find(id))
@@ -112,13 +123,19 @@ pub fn update_reminder(reminder: UpdateReminderData) -> DatabaseResult<ReminderD
             .returning(Reminder::as_returning())
             .get_result(conn)?;
 
+        debug!(target: "REMINDERS_SERVICE", "Reminder {id} updated!");
+
         Ok(updated_reminder.into())
     })
 }
 
 pub fn delete_reminder(id: i64) -> DatabaseResult<()> {
     database::within_database(|conn| {
+        debug!(target: "REMINDERS_SERVICE", "Deleting reminder: {id}");
+
         diesel::delete(reminders_dsl::reminders.find(id)).execute(conn)?;
+
+        debug!(target: "REMINDERS_SERVICE", "Deleted Reminder: {id}");
 
         Ok(())
     })

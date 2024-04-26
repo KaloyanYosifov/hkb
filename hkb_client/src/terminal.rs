@@ -2,7 +2,7 @@ use crossterm::{
     terminal::{self as crossterminal},
     ExecutableCommand,
 };
-use hkb_core::logger::{error, info};
+use hkb_core::logger::{debug, error, info};
 use ratatui::prelude::{CrosstermBackend, Terminal as TuiTerminal};
 use std::io::{self, stdout, Stdout};
 use std::panic;
@@ -24,7 +24,12 @@ pub fn init() -> Result<Terminal, TerminalError> {
         close().unwrap_or_default();
 
         // Print panic info
+        #[cfg(debug_assertions)]
+        eprintln!("{e}");
+
+        #[cfg(not(debug_assertions))]
         eprintln!("Something went horribly wrong. Check the logs!");
+
         error!(target: "TERMINAL", "PANIC: {e}");
     }));
 

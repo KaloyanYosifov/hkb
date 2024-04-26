@@ -1,4 +1,5 @@
 use crossterm::event::KeyCode;
+use hkb_core::database::services::reminders::CreateReminderData;
 use hkb_core::logger::{debug, info};
 use hkb_date::date::SimpleLocalDate;
 use hkb_date::HumanDateParser;
@@ -10,7 +11,7 @@ use crate::components::{Button, ButtonState, Input, InputState, StatefulComponen
 use crate::utils::centered_layout;
 use crate::{app_state, events, focus::Focusable};
 
-use super::{CreateReminderData, Message, RemindersView};
+use super::{Message, RemindersView};
 
 pub struct RemindersCreate {
     error_message: Option<String>,
@@ -126,7 +127,7 @@ impl RemindersView for RemindersCreate {
         if self.submit_button.is_clicked() {
             if self.validate() {
                 let data = CreateReminderData {
-                    message: self.message_input.buffer.to_owned(),
+                    note: self.message_input.buffer.to_owned(),
                     date: self.parsed_date.take().unwrap(),
                 };
                 return Some(Message::CreateReminder(data));

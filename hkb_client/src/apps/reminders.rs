@@ -1,5 +1,6 @@
+use hkb_core::database::services;
+use hkb_core::database::services::reminders::CreateReminderData;
 use hkb_core::logger::{debug, info};
-use hkb_date::date::SimpleLocalDate;
 use ratatui::prelude::{Frame, Rect};
 
 use self::reminders_create::RemindersCreate;
@@ -28,12 +29,6 @@ impl Into<Box<dyn RemindersView>> for View {
     }
 }
 
-#[derive(Debug)]
-struct CreateReminderData {
-    message: String,
-    date: SimpleLocalDate,
-}
-
 enum Message {
     ChangeView(View),
     CreateReminder(CreateReminderData),
@@ -60,9 +55,11 @@ impl RemindersApp {
                     self.current_view = view.into();
                     self.current_view.init();
                 }
-                Message::CreateReminder(message) => {
+                Message::CreateReminder(reminder) => {
                     info!(target: "REMINDERS", "Creating a reminder.");
-                    debug!(target: "REMINDERS", "Received a message to create a reminder with {message:?}");
+                    debug!(target: "REMINDERS", "Received a message to create a reminder with {reminder:?}");
+
+                    services::reminders::create_reminder(reminder);
 
                     self.current_view = View::List.into();
                     self.current_view.init();
