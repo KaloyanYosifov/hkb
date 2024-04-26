@@ -164,7 +164,7 @@ pub trait Date: ToString {
     fn to_chrono_date(&self) -> Self::DateTime;
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub struct SimpleUtcDate {
     date: DateTime<Utc>,
 }
@@ -308,11 +308,11 @@ impl Date for SimpleUtcDate {
 
 impl ToString for SimpleUtcDate {
     fn to_string(&self) -> String {
-        self.date.to_rfc3339()
+        self.date.to_rfc3339_opts(chrono::SecondsFormat::Secs, true)
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub struct SimpleLocalDate {
     date: DateTime<Local>,
 }
@@ -465,7 +465,7 @@ impl Date for SimpleLocalDate {
 
 impl ToString for SimpleLocalDate {
     fn to_string(&self) -> String {
-        self.date.to_rfc3339()
+        self.date.to_rfc3339_opts(chrono::SecondsFormat::Secs, true)
     }
 }
 

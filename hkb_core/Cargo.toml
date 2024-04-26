@@ -11,6 +11,7 @@ dirs = { version = "5.0.1" }
 cfg-if = { version = "1.0.0" }
 thiserror = { workspace = true }
 parking_lot = { workspace = true }
+serial_test = { version = "3.1.0" }
 diesel = { version = "2.1.6", optional = true }
 hkb_date = { path = "../hkb_date", version = "0.1.0" }
 diesel_migrations = { version = "2.1.0", optional = true }

@@ -1,4 +1,4 @@
-use diesel::{AsChangeset, ExpressionMethods, QueryDsl, RunQueryDsl, SelectableHelper};
+use diesel::{dsl::Order, ExpressionMethods, QueryDsl, RunQueryDsl, SelectableHelper};
 use hkb_date::date::{Date, SimpleLocalDate};
 
 use crate::database::{
@@ -21,7 +21,7 @@ pub struct UpdateReminderData {
     pub date: Option<SimpleLocalDate>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq)]
 pub struct ReminderData {
     pub id: i64,
     pub date: SimpleLocalDate,
@@ -64,6 +64,20 @@ impl Into<UpdateReminder> for UpdateReminderData {
             date: self.date.map(|date| date.to_string()),
         }
     }
+}
+
+pub fn fetch_reminders() -> DatabaseResult<Vec<ReminderData>> {
+    database::within_database(|conn| {
+        let reminders: Vec<ReminderData> = reminders_dsl::reminders
+            .select(Reminder::as_select())
+            .order_by(reminders_dsl::id.asc())
+            .get_results(conn)?
+            .into_iter()
+            .map(|reminder| reminder.into())
+            .collect();
+
+        Ok(reminders.into())
+    })
 }
 
 pub fn fetch_reminder(id: i64) -> DatabaseResult<ReminderData> {
@@ -112,10 +126,12 @@ pub fn delete_reminder(id: i64) -> DatabaseResult<()> {
 
 #[cfg(test)]
 mod tests {
-    use self::database::init_database;
+    use self::database::{init_database, within_database};
     use ctor::ctor;
+    use diesel::sql_query;
     use diesel_migrations::{embed_migrations, EmbeddedMigrations};
     use hkb_date::date::{Duration, SimpleLocalDate};
+    use serial_test::serial;
     pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("./migrations");
 
     use super::*;
@@ -132,6 +148,19 @@ mod tests {
         }};
     }
 
+    macro_rules! truncate_table {
+        () => {
+            within_database(|conn| {
+                sql_query("DELETE from reminders where 1=1")
+                    .execute(conn)
+                    .unwrap();
+
+                Ok(())
+            })
+            .unwrap();
+        };
+    }
+
     #[test]
     #[ctor]
     fn init() {
@@ -139,6 +168,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn it_can_fetch_a_reminder() {
         let reminder = create_a_reminder!();
         let fetched_reminder = fetch_reminder(reminder.id).unwrap();
@@ -149,6 +179,27 @@ mod tests {
     }
 
     #[test]
+    #[serial]
+    fn it_can_fetch_reminders() {
+        truncate_table!();
+
+        let reminders = vec![
+            create_a_reminder!(),
+            create_a_reminder!(),
+            create_a_reminder!(),
+        ];
+        let fetched_reminders = fetch_reminders().unwrap();
+
+        for i in 0..fetched_reminders.len() {
+            let reminder = fetched_reminders.get(i).unwrap();
+            let expected_reminder = reminders.get(i).unwrap();
+
+            assert_eq!(expected_reminder, reminder);
+        }
+    }
+
+    #[test]
+    #[serial]
     fn it_can_create_a_reminder() {
         let date = SimpleLocalDate::now();
         let reminder_data = CreateReminderData {
@@ -162,6 +213,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn it_can_update_a_reminder() {
         let reminder = create_a_reminder!();
         let updated_reminder = update_reminder(UpdateReminderData {
@@ -177,6 +229,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn it_can_update_date_of_a_reminder() {
         let reminder = create_a_reminder!();
         let mut date = SimpleLocalDate::now();
@@ -196,6 +249,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn it_can_delete_a_reminder() {
         let reminder = create_a_reminder!();
         let reminder2 = create_a_reminder!();
