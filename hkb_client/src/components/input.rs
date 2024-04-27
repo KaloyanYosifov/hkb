@@ -121,6 +121,34 @@ impl<'a> Input<'a> {
             std::cmp::min(current_pos as u16 - 1, self.get_max_right_cursor_pos(state));
     }
 
+    fn go_back_word(&self, state: &mut InputState) {
+        if state.cursor_offset >= self.get_max_right_cursor_pos(state) {
+            return;
+        }
+
+        let mut current_pos = state.cursor_offset.checked_sub(1).unwrap_or(0) as usize;
+        let chars = state.buffer.chars().collect::<Vec<char>>();
+        let is_in_bounds = |val: &usize| *val > 0;
+
+        // TODO: Should we support UTF8 instead of only ascii for inputs?
+        while is_in_bounds(&current_pos) && chars[current_pos].is_ascii_whitespace() {
+            current_pos = current_pos.checked_sub(1).unwrap_or(0);
+        }
+
+        if is_in_bounds(&current_pos) && chars[current_pos].is_ascii_punctuation() {
+            while is_in_bounds(&current_pos) && chars[current_pos].is_ascii_punctuation() {
+                current_pos = current_pos.checked_sub(1).unwrap_or(0);
+            }
+        } else if is_in_bounds(&current_pos) && chars[current_pos].is_ascii_alphanumeric() {
+            while is_in_bounds(&current_pos) && chars[current_pos].is_ascii_alphanumeric() {
+                current_pos = current_pos.checked_sub(1).unwrap_or(0);
+            }
+        }
+
+        state.cursor_offset =
+            std::cmp::min(current_pos as u16, self.get_max_right_cursor_pos(state));
+    }
+
     fn update_on_not_editing(&self, state: &mut InputState) {
         events::consume_key_event!(
             KeyCode::Char(c) => {
@@ -130,6 +158,7 @@ impl<'a> Input<'a> {
                     '^' => self.go_far_left(state),
                     '$' => self.go_far_right(state),
                     'e' => self.go_end_of_word(state),
+                    'b' => self.go_back_word(state),
                     _ => {}
                 }
             }
