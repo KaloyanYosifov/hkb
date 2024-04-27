@@ -27,7 +27,7 @@ impl Default for InputState {
             visible_buffer_offset: 0,
             //buffer: String::with_capacity(512),
             buffer: String::from(
-                "Testing this if this is a good idea lorem ipsum bopsum best test best mest sest Testing this if this is a good idea lorem ipsum bopsum best test best mest sest",
+                "Testing this. If this is $ :) a good idea lorem. ipsum bopsum best test best mest sest Testing this if this is a good idea lorem ipsum bopsum best test best mest sest",
             ),
         }
     }
@@ -93,22 +93,45 @@ impl<'a> Input<'a> {
         state.cursor_offset = self.get_max_right_cursor_pos(state);
     }
 
+    fn go_end_of_word(&self, state: &mut InputState) {
+        if state.cursor_offset >= self.get_max_right_cursor_pos(state) {
+            return;
+        }
+
+        let mut current_pos = state.cursor_offset as usize + 1;
+        let chars = state.buffer.chars().collect::<Vec<char>>();
+        let is_in_bounds = |val: &usize| *val < self.get_max_right_cursor_pos(state) as usize;
+
+        // TODO: Should we support UTF8 instead of only ascii for inputs?
+        while is_in_bounds(&current_pos) && chars[current_pos].is_ascii_whitespace() {
+            current_pos += 1;
+        }
+
+        if is_in_bounds(&current_pos) && chars[current_pos].is_ascii_punctuation() {
+            while is_in_bounds(&current_pos) && chars[current_pos].is_ascii_punctuation() {
+                current_pos += 1;
+            }
+        } else if is_in_bounds(&current_pos) && chars[current_pos].is_ascii_alphanumeric() {
+            while is_in_bounds(&current_pos) && chars[current_pos].is_ascii_alphanumeric() {
+                current_pos += 1;
+            }
+        }
+
+        state.cursor_offset =
+            std::cmp::min(current_pos as u16 - 1, self.get_max_right_cursor_pos(state));
+    }
+
     fn update_on_not_editing(&self, state: &mut InputState) {
         events::consume_key_event!(
-            KeyCode::Char(c) if c == 'h' => {
-                self.go_left(state);
-            }
-
-            KeyCode::Char(c) if c == 'l' => {
-                self.go_right(state);
-            }
-
-            KeyCode::Char(c) if c == '$' => {
-                self.go_far_right(state);
-            }
-
-            KeyCode::Char(c) if c == '^' => {
-                self.go_far_left(state);
+            KeyCode::Char(c) => {
+                match c {
+                    'h' => self.go_left(state),
+                    'l' => self.go_right(state),
+                    '^' => self.go_far_left(state),
+                    '$' => self.go_far_right(state),
+                    'e' => self.go_end_of_word(state),
+                    _ => {}
+                }
             }
         );
     }
