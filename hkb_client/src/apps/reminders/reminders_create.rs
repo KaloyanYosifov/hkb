@@ -143,29 +143,31 @@ impl RemindersView for RemindersCreate {
         ];
 
         if !app_state::is_editing() {
-            if events::has_key_event!(KeyCode::Tab) {
-                let last_focused_input = self.focused_component;
-                self.focused_component += 1;
-
-                if self.focused_component >= focusables.len() {
-                    self.focused_component = 0;
-                }
-
-                focusables[last_focused_input].blur();
-            } else if events::has_key_event!(KeyCode::BackTab) {
-                let last_focused_input = self.focused_component;
-
-                if self.focused_component <= 0 {
-                    self.focused_component = focusables.len() - 1;
-                } else {
-                    self.focused_component -= 1;
-                }
-
-                focusables[last_focused_input].blur();
-            } else if events::has_key_event!(KeyCode::Char(c) if c == 'I' || c == 'i' || c == 'A' || c == 'a')
+            if events::has_key_event!(KeyCode::Char(c) if c == 'I' || c == 'i' || c == 'A' || c == 'a')
             {
                 app_state::set_editing(true);
             }
+        }
+
+        if events::has_key_event!(KeyCode::Tab) {
+            let last_focused_input = self.focused_component;
+            self.focused_component += 1;
+
+            if self.focused_component >= focusables.len() {
+                self.focused_component = 0;
+            }
+
+            focusables[last_focused_input].blur();
+        } else if events::has_key_event!(KeyCode::BackTab) {
+            let last_focused_input = self.focused_component;
+
+            if self.focused_component <= 0 {
+                self.focused_component = focusables.len() - 1;
+            } else {
+                self.focused_component -= 1;
+            }
+
+            focusables[last_focused_input].blur();
         }
 
         focusables[self.focused_component].focus();
