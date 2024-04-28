@@ -1,5 +1,4 @@
 use crossterm::event::{Event, KeyCode};
-use hkb_core::logger::debug;
 use ratatui::{
     prelude::Rect,
     widgets::{Block, Borders, Paragraph},
@@ -25,10 +24,7 @@ impl Default for InputState {
             last_render_width: 0,
             cursor_offset: 0,
             visible_buffer_offset: 0,
-            //buffer: String::with_capacity(512),
-            buffer: String::from(
-                "Testing this. If this is $ :) a good idea lorem. ipsum bopsum best test best mest sest Testing this if this is a good idea lorem ipsum bopsum best test best mest sest",
-            ),
+            buffer: String::with_capacity(512),
         }
     }
 }
@@ -181,7 +177,17 @@ impl<'a> Input<'a> {
 
         events::consume_key_event!(
             KeyCode::Char(c) => {
-                state.buffer.push(c);
+                // TODO: make it work inside the view range of the string
+                let offset = state.cursor_offset as usize;
+                let first_part = &state.buffer[..offset];
+                let second_part = &state.buffer[offset..];
+                let mut buffer = String::with_capacity(first_part.len() + second_part.len() + 1);
+
+                buffer.push_str(first_part);
+                buffer.push(c);
+                buffer.push_str(second_part);
+
+                state.buffer = buffer;
                 state.visible_buffer_offset = state.buffer.len();
 
                 self.go_right(state);
