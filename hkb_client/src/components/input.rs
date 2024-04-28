@@ -93,27 +93,33 @@ impl<'a> Input<'a> {
         state.cursor_offset = self.get_max_right_cursor_pos(state);
     }
 
-    fn go_to_word<C: Fn(u16) -> bool, F: Fn(u16) -> u16>(
-        &self,
-        mut current_pos: usize,
-        state: &mut InputState,
-        condition: C,
-        callback: F,
-    ) {
-        let chars = state.buffer.chars().collect::<Vec<char>>();
-
-        // TODO: Should we support UTF8 instead of only ascii for inputs?
-        while condition(current_pos as u16) && chars[current_pos].is_ascii_whitespace() {
-            current_pos = callback(current_pos as u16) as usize;
+    fn get_char_class(&self, pos: usize, chars: &Vec<char>) -> i8 {
+        if pos >= chars.len() {
+            return -1;
         }
 
-        if condition(current_pos as u16) && chars[current_pos].is_ascii_punctuation() {
-            while condition(current_pos as u16) && chars[current_pos].is_ascii_punctuation() {
-                current_pos = callback(current_pos as u16) as usize;
-            }
-        } else if condition(current_pos as u16) && chars[current_pos].is_ascii_alphanumeric() {
-            while condition(current_pos as u16) && chars[current_pos].is_ascii_alphanumeric() {
-                current_pos = callback(current_pos as u16) as usize;
+        if chars[pos].is_whitespace() {
+            0
+        } else if chars[pos].is_ascii_punctuation() {
+            1
+        } else {
+            2
+        }
+    }
+
+    fn go_end_of_word(&self, state: &mut InputState) {
+        let chars = state.buffer.chars().collect::<Vec<char>>();
+        let mut current_pos = state.cursor_offset as usize + 1;
+
+        while self.get_char_class(current_pos, &chars) == 0 {
+            current_pos += 1;
+        }
+
+        let char_class = self.get_char_class(current_pos, &chars);
+
+        if char_class != -1 {
+            while self.get_char_class(current_pos, &chars) == char_class {
+                current_pos += 1;
             }
         }
 
@@ -123,26 +129,31 @@ impl<'a> Input<'a> {
         );
     }
 
-    fn go_end_of_word(&self, state: &mut InputState) {
-        let max_cursor_pos = self.get_max_right_cursor_pos(state);
-
-        self.go_to_word(
-            state.cursor_offset as usize + 1,
-            state,
-            |val| val < max_cursor_pos,
-            |pos| pos + 1,
-        );
-    }
-
     fn go_back_word(&self, state: &mut InputState) {
-        state.cursor_offset.checked_sub(1).unwrap_or(0) as usize;
+        let chars = state.buffer.chars().collect::<Vec<char>>();
+        let mut current_pos = state.cursor_offset.checked_sub(1).unwrap_or(0) as usize;
 
-        self.go_to_word(
-            state.cursor_offset.checked_sub(1).unwrap_or(0) as usize,
-            state,
-            |val| val > 0,
-            |pos| pos.checked_sub(1).unwrap_or(0),
-        );
+        while self.get_char_class(current_pos, &chars) == 0 {
+            current_pos = current_pos.checked_sub(1).unwrap_or(0);
+
+            if current_pos == 0 {
+                break;
+            }
+        }
+
+        let char_class = self.get_char_class(current_pos, &chars);
+
+        if current_pos != 0 && char_class != -1 {
+            while self.get_char_class(current_pos, &chars) == char_class {
+                current_pos = current_pos.checked_sub(1).unwrap_or(0);
+
+                if current_pos == 0 {
+                    break;
+                }
+            }
+        }
+
+        state.cursor_offset = (current_pos + 1) as u16;
     }
 
     fn update_on_not_editing(&self, state: &mut InputState) {
