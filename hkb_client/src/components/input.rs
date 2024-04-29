@@ -149,7 +149,11 @@ impl<'a> Input<'a> {
             }
         }
 
-        state.cursor_offset = (current_pos + 1) as u16;
+        if current_pos == 0 {
+            state.cursor_offset = 0;
+        } else {
+            state.cursor_offset = (current_pos + 1) as u16;
+        }
     }
 
     fn update_on_not_editing(&self, state: &mut InputState) {
