@@ -1,12 +1,15 @@
 use app_state::AppView;
 use components::{Component, Navigation};
 use crossterm::event::{self, Event, KeyCode};
-use hkb_core::logger::{debug, info, init as logger_init};
+use diesel_migrations::{embed_migrations, EmbeddedMigrations};
+use hkb_core::database::init_database;
+use hkb_core::logger::init as logger_init;
 use ratatui::prelude::{Constraint, Direction, Layout};
 use ratatui::widgets::{Block, Borders};
 use std::{io::Error as IOError, thread, time::Duration};
 use thiserror::Error as ThisError;
 
+mod actions;
 mod app_state;
 mod apps;
 mod components;
@@ -14,6 +17,9 @@ mod events;
 mod focus;
 mod terminal;
 mod utils;
+
+pub const APP_MIGRATIONS: EmbeddedMigrations = embed_migrations!("./migrations");
+pub const CORE_MIGRATIONS: EmbeddedMigrations = embed_migrations!("../hkb_core/migrations");
 
 #[derive(ThisError, Debug)]
 pub enum RendererError {
@@ -35,6 +41,10 @@ fn main() -> RenderResult {
 
     logger_init();
     terminal.clear()?;
+
+    // TODO: do not use in memory sqlite database here
+    init_database(":memory:", vec![CORE_MIGRATIONS, APP_MIGRATIONS])
+        .expect("Failed to initialize database!");
 
     while !should_quit {
         while event::poll(Duration::ZERO).unwrap() {

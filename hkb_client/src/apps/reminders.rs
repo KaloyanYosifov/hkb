@@ -1,4 +1,7 @@
-use ratatui::prelude::{Constraint, Direction, Frame, Layout, Rect};
+use hkb_core::database::services;
+use hkb_core::database::services::reminders::CreateReminderData;
+use hkb_core::logger::{debug, info};
+use ratatui::prelude::{Frame, Rect};
 
 use self::reminders_create::RemindersCreate;
 use self::reminders_list::RemindersList;
@@ -28,6 +31,7 @@ impl Into<Box<dyn RemindersView>> for View {
 
 enum Message {
     ChangeView(View),
+    CreateReminder(CreateReminderData),
 }
 
 pub struct RemindersApp {
@@ -49,6 +53,15 @@ impl RemindersApp {
             Some(m) => match m {
                 Message::ChangeView(view) => {
                     self.current_view = view.into();
+                    self.current_view.init();
+                }
+                Message::CreateReminder(reminder) => {
+                    info!(target: "REMINDERS", "Creating a reminder.");
+                    debug!(target: "REMINDERS", "Received a message to create a reminder with {reminder:?}");
+
+                    services::reminders::create_reminder(reminder);
+
+                    self.current_view = View::List.into();
                     self.current_view.init();
                 }
             },

@@ -2,6 +2,8 @@ use std::fmt::Display;
 
 use parking_lot::{MappedMutexGuard, Mutex, MutexGuard};
 
+use crate::terminal;
+
 static GLOBAL_APP_STATE: Mutex<Option<AppState>> = parking_lot::const_mutex(None);
 
 #[derive(Debug, Clone, Copy)]
@@ -54,6 +56,12 @@ pub fn get_view() -> AppView {
 }
 
 pub fn set_editing(editing: bool) {
+    if editing {
+        terminal::set_cursor_steady_bar();
+    } else {
+        terminal::set_cursor_to_default();
+    }
+
     AppState::get_global().editing = editing;
 }
 
