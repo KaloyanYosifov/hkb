@@ -1,4 +1,5 @@
 use crossterm::{
+    cursor as crossterm_cursor,
     terminal::{self as crossterminal},
     ExecutableCommand,
 };
@@ -41,6 +42,18 @@ pub fn init() -> Result<Terminal, TerminalError> {
     info!(target: "TERMINAL", "Terminal initialized!");
 
     Ok(terminal)
+}
+
+pub fn set_cursor_steady_bar() {
+    stdout()
+        .execute(crossterm_cursor::SetCursorStyle::SteadyBar)
+        .expect("Should have been able to set cursor!");
+}
+
+pub fn set_cursor_to_default() {
+    stdout()
+        .execute(crossterm_cursor::SetCursorStyle::DefaultUserShape)
+        .expect("Should have been able to set cursor!");
 }
 
 pub fn close() -> Result<(), TerminalError> {

@@ -1,5 +1,4 @@
 use crossterm::event::{Event, KeyCode};
-use hkb_core::logger::debug;
 use ratatui::{
     prelude::Rect,
     widgets::{Block, Borders, Paragraph},
@@ -137,10 +136,10 @@ impl<'a> Input<'a> {
 
         state.cursor_offset.set_val(std::cmp::min(
             current_pos.checked_sub(1).unwrap_or(0),
-            self.get_max_right_cursor_pos(state) as usize,
+            self.get_max_right_cursor_pos(state),
         ));
 
-        if current_pos >= (self.get_max_right_cursor_pos(state) as usize - 1) {
+        if current_pos >= self.get_max_right_cursor_pos(state) - 1 {
             state.visible_buffer_offset = current_pos - state.cursor_offset.get_val() - 1;
         }
     }
@@ -176,6 +175,8 @@ impl<'a> Input<'a> {
             state.visible_buffer_offset -= current_pos;
             state.cursor_offset.set_to_min();
         } else {
+            // TOOD: check why back word is not working correctly
+            // when we have text longer than the visible input
             state
                 .cursor_offset
                 .set_val(current_pos - state.visible_buffer_offset);
@@ -231,7 +232,7 @@ impl<'a> Input<'a> {
     fn update(&self, state: &mut InputState) {
         state
             .cursor_offset
-            .set_max(state.last_render_width as BoundValueType);
+            .set_max(self.get_max_right_cursor_pos(state));
 
         if !app_state::is_editing() {
             self.update_on_not_editing(state);
