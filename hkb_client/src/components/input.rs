@@ -1,18 +1,23 @@
 use crossterm::event::{Event, KeyCode};
+use hkb_core::logger::debug;
 use ratatui::{
     prelude::Rect,
     widgets::{Block, Borders, Paragraph},
     Frame,
 };
 
-use crate::{app_state, events, focus::Focusable};
+use crate::{
+    app_state, events,
+    focus::Focusable,
+    utils::bounded_value::{BoundValueType, BoundedValue},
+};
 
 use super::StatefulComponent;
 
 pub struct InputState {
     pub buffer: String,
     focused: bool,
-    cursor_offset: u16,
+    cursor_offset: BoundedValue,
     visible_buffer_offset: usize,
     last_render_width: u16,
 }
@@ -22,7 +27,7 @@ impl Default for InputState {
         Self {
             focused: false,
             last_render_width: 0,
-            cursor_offset: 0,
+            cursor_offset: BoundedValue::new(0, 0, 0),
             visible_buffer_offset: 0,
             buffer: String::with_capacity(512),
         }
@@ -60,8 +65,11 @@ impl<'a> Input<'a> {
         &state.buffer[state.visible_buffer_offset..offset_end]
     }
 
-    fn get_max_right_cursor_pos(&self, state: &InputState) -> u16 {
-        std::cmp::min(state.buffer.len(), (state.last_render_width - 1) as usize) as u16
+    fn get_max_right_cursor_pos(&self, state: &InputState) -> BoundValueType {
+        std::cmp::min(
+            state.buffer.len(),
+            (state.last_render_width - 1) as BoundValueType,
+        )
     }
 
     fn go_left(&self, state: &mut InputState) {
@@ -74,7 +82,7 @@ impl<'a> Input<'a> {
 
     fn go_right(&self, state: &mut InputState) {
         let visible_buffer_len = (state.last_render_width as usize) + state.visible_buffer_offset;
-        if state.cursor_offset < self.get_max_right_cursor_pos(state) {
+        if state.cursor_offset.lt(self.get_max_right_cursor_pos(state)) {
             state.cursor_offset += 1;
         } else if visible_buffer_len < state.buffer.len() {
             state.visible_buffer_offset += 1;
@@ -83,12 +91,15 @@ impl<'a> Input<'a> {
 
     fn go_far_left(&self, state: &mut InputState) {
         state.visible_buffer_offset = 0;
-        state.cursor_offset = 0;
+        state.cursor_offset.set_val(0);
     }
 
     fn go_far_right(&self, state: &mut InputState) {
         let buffer_len = state.buffer.len();
-        state.cursor_offset = self.get_max_right_cursor_pos(state);
+        state
+            .cursor_offset
+            .set_val(self.get_max_right_cursor_pos(state));
+
         state.visible_buffer_offset = buffer_len
             .checked_sub(state.last_render_width as usize)
             .unwrap_or(0);
@@ -124,13 +135,13 @@ impl<'a> Input<'a> {
             }
         }
 
-        state.cursor_offset = std::cmp::min(
-            current_pos.checked_sub(1).unwrap_or(0) as u16,
-            self.get_max_right_cursor_pos(state),
-        );
+        state.cursor_offset.set_val(std::cmp::min(
+            current_pos.checked_sub(1).unwrap_or(0),
+            self.get_max_right_cursor_pos(state) as usize,
+        ));
 
         if current_pos >= (self.get_max_right_cursor_pos(state) as usize - 1) {
-            state.visible_buffer_offset = current_pos - (state.cursor_offset as usize) - 1;
+            state.visible_buffer_offset = current_pos - state.cursor_offset.get_val() - 1;
         }
     }
 
@@ -163,9 +174,11 @@ impl<'a> Input<'a> {
 
         if state.visible_buffer_offset > current_pos {
             state.visible_buffer_offset -= current_pos;
-            state.cursor_offset = 0;
+            state.cursor_offset.set_to_min();
         } else {
-            state.cursor_offset = (current_pos - state.visible_buffer_offset) as u16;
+            state
+                .cursor_offset
+                .set_val(current_pos - state.visible_buffer_offset);
         }
     }
 
@@ -212,10 +225,14 @@ impl<'a> Input<'a> {
     }
 
     fn get_buffer_update_offset(&self, state: &InputState) -> usize {
-        state.visible_buffer_offset + (state.cursor_offset as usize)
+        state.visible_buffer_offset + state.cursor_offset.get_val()
     }
 
     fn update(&self, state: &mut InputState) {
+        state
+            .cursor_offset
+            .set_max(state.last_render_width as BoundValueType);
+
         if !app_state::is_editing() {
             self.update_on_not_editing(state);
 
@@ -235,7 +252,7 @@ impl<'a> Input<'a> {
 
                 state.buffer = buffer;
 
-                if (state.cursor_offset + 1) >= state.last_render_width {
+                if (state.cursor_offset.get_val() + 1) >= state.last_render_width as BoundValueType {
                     state.visible_buffer_offset += 1;
                 }
 
@@ -257,7 +274,7 @@ impl<'a> Input<'a> {
                 buffer.push_str(second_part);
 
                 state.buffer = buffer;
-                state.cursor_offset = state.cursor_offset.checked_sub(1).unwrap_or(0);
+                state.cursor_offset.sub_val(1);
             }
         );
     }
@@ -273,7 +290,10 @@ impl<'a> StatefulComponent for Input<'a> {
         if state.focused {
             self.update(state);
 
-            frame.set_cursor(state.cursor_offset + block_area.x, block_area.y);
+            frame.set_cursor(
+                state.cursor_offset.get_val() as u16 + block_area.x,
+                block_area.y,
+            );
         }
 
         state.last_render_width = block_area.width;
