@@ -4,8 +4,12 @@ members = [
     "hkb_core",
     "hkb_client",
     "hkb_date",
+    "hkb_daemon",
+    "hkb_daemon_core",
 ]
 
 [workspace.dependencies]
+dirs = { version = "5.0.1" }
 thiserror = { version = "1.0.56" }
 parking_lot = { version = "0.12.1" }
+tokio = { version = "1.37.0", features = ["full"] }
