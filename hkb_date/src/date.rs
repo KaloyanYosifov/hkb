@@ -87,13 +87,9 @@ impl<T: chrono::TimeZone> std::ops::Add<Duration> for DateTime<T> {
                 }
 
                 let years_to_add = (new_month / MONTHS_IN_A_YEAR) as i32;
-                let new_date = {
-                    if let Some(date) = self.with_year(self.year() + years_to_add) {
-                        date
-                    } else {
-                        self.with_year(0).unwrap()
-                    }
-                };
+                let new_date = self
+                    .with_year(self.year() + years_to_add)
+                    .unwrap_or_else(|| self.with_year(0).unwrap());
 
                 new_month = new_month % MONTHS_IN_A_YEAR;
 
@@ -101,11 +97,9 @@ impl<T: chrono::TimeZone> std::ops::Add<Duration> for DateTime<T> {
                     new_month = MONTHS_IN_A_YEAR;
                 }
 
-                if let Some(date) = new_date.with_month(new_month) {
-                    date
-                } else {
-                    new_date.with_month(0).unwrap()
-                }
+                new_date
+                    .with_month(new_month)
+                    .unwrap_or_else(|| new_date.with_month(1).unwrap())
             }
             Duration::Year(v) => {
                 let mut year = (self.year() as u32) + v;
@@ -114,11 +108,57 @@ impl<T: chrono::TimeZone> std::ops::Add<Duration> for DateTime<T> {
                     year = 0;
                 }
 
-                if let Some(date) = self.with_year(year as i32) {
-                    date
-                } else {
-                    self.with_year(0).unwrap()
+                self.with_year(year as i32)
+                    .unwrap_or_else(|| self.with_year(0).unwrap())
+            }
+        }
+    }
+}
+
+impl<T: chrono::TimeZone> std::ops::Sub<Duration> for DateTime<T> {
+    type Output = DateTime<T>;
+
+    fn sub(self, rhs: Duration) -> Self::Output {
+        match rhs {
+            Duration::Minute(v) => self - (TimeDelta::minutes(v as i64)),
+            Duration::Hour(v) => self - (TimeDelta::hours(v as i64)),
+            Duration::Day(v) => self - (TimeDelta::days(v as i64)),
+            Duration::Week(v) => self - (TimeDelta::weeks(v as i64)),
+            Duration::Month(v) => {
+                if self.month() > v {
+                    let mut month = self.month() - v;
+
+                    if month == 0 {
+                        month = 1;
+                    }
+
+                    return self.with_month(month).unwrap();
                 }
+
+                let mut new_month = MONTHS_IN_A_YEAR - (v - self.month());
+                let mut years_to_subtract = 1;
+
+                while new_month > MONTHS_IN_A_YEAR {
+                    new_month = new_month.checked_sub(MONTHS_IN_A_YEAR).unwrap_or(0);
+                    years_to_subtract += 1;
+                }
+
+                let new_date = {
+                    let new_year = self.year().checked_sub(years_to_subtract).unwrap_or(0);
+
+                    self.with_year(new_year)
+                        .unwrap_or_else(|| self.with_year(0).unwrap())
+                };
+
+                new_date
+                    .with_month(new_month)
+                    .unwrap_or_else(|| new_date.with_month(1).unwrap())
+            }
+            Duration::Year(v) => {
+                let year = (self.year() as u32).checked_sub(v).unwrap_or(0);
+
+                self.with_year(year as i32)
+                    .unwrap_or_else(|| self.with_year(0).unwrap())
             }
         }
     }
@@ -132,6 +172,7 @@ pub trait Date: ToString {
     type DateTime;
 
     fn add_duration(&mut self, duration: Duration) -> DateResult;
+    fn sub_duration(&mut self, duration: Duration) -> DateResult;
     fn set_year(&mut self, year: i32) -> DateResult;
     fn set_month(&mut self, month: DateUnit) -> DateResult;
     fn set_day(&mut self, day: DateUnit) -> DateResult;
@@ -195,6 +236,12 @@ impl Date for SimpleUtcDate {
 
     fn add_duration(&mut self, duration: Duration) -> DateResult {
         self.date = self.date + duration;
+
+        Ok(())
+    }
+
+    fn sub_duration(&mut self, duration: Duration) -> DateResult {
+        self.date = self.date - duration;
 
         Ok(())
     }
@@ -348,6 +395,12 @@ impl Date for SimpleLocalDate {
 
     fn add_duration(&mut self, duration: Duration) -> DateResult {
         self.date = self.date + duration;
+
+        Ok(())
+    }
+
+    fn sub_duration(&mut self, duration: Duration) -> DateResult {
+        self.date = self.date - duration;
 
         Ok(())
     }
@@ -550,6 +603,16 @@ mod tests {
         };
     }
 
+    macro_rules! assert_correct_date_time_from_sub_duration {
+        ($expected_date:literal, $duration:expr) => {
+            let date = NaiveDateTime::parse_from_str("2024-04-14 08:00:00", "%Y-%m-%d %H:%M:%S")
+                .unwrap()
+                .and_utc();
+
+            assert_eq!($expected_date, (date - $duration).to_string());
+        };
+    }
+
     // Sanity checks below (even though chrono has test cases for these below we do a sanity check)
     // to verify we are passing correct duration
 
@@ -618,6 +681,106 @@ mod tests {
         assert_correct_date_time_from_duration!("2049-04-14 08:00:00 UTC", Duration::Year(25));
         assert_correct_date_time_from_duration!("2054-04-14 08:00:00 UTC", Duration::Year(30));
         assert_correct_date_time_from_duration!(
+            "0000-04-14 08:00:00 UTC",
+            Duration::Year((i32::MAX - 2025) as u32)
+        );
+    }
+
+    #[test]
+    fn minute_duration_can_be_subtracted_from_date_time() {
+        assert_correct_date_time_from_sub_duration!("2024-04-14 07:59:00 UTC", Duration::Minute(1));
+        assert_correct_date_time_from_sub_duration!("2024-04-14 07:55:00 UTC", Duration::Minute(5));
+        assert_correct_date_time_from_sub_duration!(
+            "2024-04-14 07:50:00 UTC",
+            Duration::Minute(10)
+        );
+        assert_correct_date_time_from_sub_duration!(
+            "2024-04-14 07:45:00 UTC",
+            Duration::Minute(15)
+        );
+        assert_correct_date_time_from_sub_duration!(
+            "2024-04-14 07:40:00 UTC",
+            Duration::Minute(20)
+        );
+        assert_correct_date_time_from_sub_duration!(
+            "2024-04-14 07:35:00 UTC",
+            Duration::Minute(25)
+        );
+        assert_correct_date_time_from_sub_duration!(
+            "2024-04-14 07:30:00 UTC",
+            Duration::Minute(30)
+        );
+        assert_correct_date_time_from_sub_duration!(
+            "2024-04-14 07:00:00 UTC",
+            Duration::Minute(60)
+        );
+        assert_correct_date_time_from_sub_duration!(
+            "2024-04-14 06:55:00 UTC",
+            Duration::Minute(65)
+        );
+        assert_correct_date_time_from_sub_duration!(
+            "2024-04-14 06:50:00 UTC",
+            Duration::Minute(70)
+        );
+        assert_correct_date_time_from_sub_duration!(
+            "2024-04-14 06:30:00 UTC",
+            Duration::Minute(90)
+        );
+        assert_correct_date_time_from_sub_duration!(
+            "2024-04-13 08:00:00 UTC",
+            Duration::Minute(1440)
+        );
+    }
+
+    #[test]
+    fn hour_duration_can_be_subtracted_from_date_time() {
+        assert_correct_date_time_from_sub_duration!("2024-04-14 07:00:00 UTC", Duration::Hour(1));
+        assert_correct_date_time_from_sub_duration!("2024-04-14 03:00:00 UTC", Duration::Hour(5));
+        assert_correct_date_time_from_sub_duration!("2024-04-13 22:00:00 UTC", Duration::Hour(10));
+        assert_correct_date_time_from_sub_duration!("2024-04-13 17:00:00 UTC", Duration::Hour(15));
+        assert_correct_date_time_from_sub_duration!("2024-04-13 16:00:00 UTC", Duration::Hour(16));
+        assert_correct_date_time_from_sub_duration!("2024-04-13 15:00:00 UTC", Duration::Hour(17));
+        assert_correct_date_time_from_sub_duration!("2024-04-13 08:00:00 UTC", Duration::Hour(24));
+        assert_correct_date_time_from_sub_duration!("2024-04-12 08:00:00 UTC", Duration::Hour(48));
+        assert_correct_date_time_from_sub_duration!("2024-04-07 08:00:00 UTC", Duration::Hour(168));
+    }
+
+    #[test]
+    fn week_duration_can_be_subtracted_from_date_time() {
+        assert_correct_date_time_from_sub_duration!("2024-04-07 08:00:00 UTC", Duration::Week(1));
+        assert_correct_date_time_from_sub_duration!("2024-03-10 08:00:00 UTC", Duration::Week(5));
+        assert_correct_date_time_from_sub_duration!("2024-02-04 08:00:00 UTC", Duration::Week(10));
+        assert_correct_date_time_from_sub_duration!("2023-10-15 08:00:00 UTC", Duration::Week(26));
+        assert_correct_date_time_from_sub_duration!("2023-04-16 08:00:00 UTC", Duration::Week(52));
+    }
+
+    #[test]
+    fn month_duration_can_be_subtracted_from_date_time() {
+        assert_correct_date_time_from_sub_duration!("2024-03-14 08:00:00 UTC", Duration::Month(1));
+        assert_correct_date_time_from_sub_duration!("2024-02-14 08:00:00 UTC", Duration::Month(2));
+        assert_correct_date_time_from_sub_duration!("2024-01-14 08:00:00 UTC", Duration::Month(3));
+        assert_correct_date_time_from_sub_duration!("2023-12-14 08:00:00 UTC", Duration::Month(4));
+        assert_correct_date_time_from_sub_duration!("2023-11-14 08:00:00 UTC", Duration::Month(5));
+        assert_correct_date_time_from_sub_duration!("2023-10-14 08:00:00 UTC", Duration::Month(6));
+        assert_correct_date_time_from_sub_duration!("2023-09-14 08:00:00 UTC", Duration::Month(7));
+        assert_correct_date_time_from_sub_duration!("2023-08-14 08:00:00 UTC", Duration::Month(8));
+        assert_correct_date_time_from_sub_duration!("2023-07-14 08:00:00 UTC", Duration::Month(9));
+        assert_correct_date_time_from_sub_duration!("2023-06-14 08:00:00 UTC", Duration::Month(10));
+        assert_correct_date_time_from_sub_duration!("2023-05-14 08:00:00 UTC", Duration::Month(11));
+        assert_correct_date_time_from_sub_duration!("2023-04-14 08:00:00 UTC", Duration::Month(12));
+        assert_correct_date_time_from_sub_duration!("2023-03-14 08:00:00 UTC", Duration::Month(13));
+    }
+
+    #[test]
+    fn year_duration_can_be_subtracted_from_date_time() {
+        assert_correct_date_time_from_sub_duration!("2023-04-14 08:00:00 UTC", Duration::Year(1));
+        assert_correct_date_time_from_sub_duration!("2019-04-14 08:00:00 UTC", Duration::Year(5));
+        assert_correct_date_time_from_sub_duration!("2014-04-14 08:00:00 UTC", Duration::Year(10));
+        assert_correct_date_time_from_sub_duration!("2009-04-14 08:00:00 UTC", Duration::Year(15));
+        assert_correct_date_time_from_sub_duration!("2004-04-14 08:00:00 UTC", Duration::Year(20));
+        assert_correct_date_time_from_sub_duration!("1999-04-14 08:00:00 UTC", Duration::Year(25));
+        assert_correct_date_time_from_sub_duration!("1994-04-14 08:00:00 UTC", Duration::Year(30));
+        assert_correct_date_time_from_sub_duration!(
             "0000-04-14 08:00:00 UTC",
             Duration::Year((i32::MAX - 2025) as u32)
         );

@@ -149,7 +149,7 @@ impl<T: Date + Clone> HumanDateParser<T> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::date::{Date, SimpleUtcDate};
+    use crate::date::SimpleUtcDate;
 
     macro_rules! assert_date_parsing {
         ($input:literal, $expected: literal) => {
@@ -166,26 +166,23 @@ mod tests {
 
     #[test]
     fn it_can_parse_in_sentence() {
-        assert_date_parsing!("In 10 minutes", "2024-04-14 08:10:00 UTC");
-        assert_date_parsing!("In 5 days", "2024-04-19 08:00:00 UTC");
-        assert_date_parsing!("In 3 months", "2024-07-14 08:00:00 UTC");
+        assert_date_parsing!("In 10 minutes", "2024-04-14T08:10:00Z");
+        assert_date_parsing!("In 5 days", "2024-04-19T08:00:00Z");
+        assert_date_parsing!("In 3 months", "2024-07-14T08:00:00Z");
     }
 
     #[test]
     fn it_can_parse_at_sentence() {
-        assert_date_parsing!("At 05:00", "2024-04-14 05:00:00 UTC");
-        assert_date_parsing!("At 15:00 on the 31st of January", "2024-01-31 15:00:00 UTC");
-        assert_date_parsing!("At 22:30 on the 30th of March", "2024-03-30 22:30:00 UTC");
-        assert_date_parsing!(
-            "At 13:00 on the 11th of December",
-            "2024-12-11 13:00:00 UTC"
-        );
+        assert_date_parsing!("At 05:00", "2024-04-14T05:00:00Z");
+        assert_date_parsing!("At 15:00 on the 31st of January", "2024-01-31T15:00:00Z");
+        assert_date_parsing!("At 22:30 on the 30th of March", "2024-03-30T22:30:00Z");
+        assert_date_parsing!("At 13:00 on the 11th of December", "2024-12-11T13:00:00Z");
     }
 
     #[test]
     fn it_can_parse_on_sentence() {
-        assert_date_parsing!("On 5th of May", "2024-05-05 08:00:00 UTC");
-        assert_date_parsing!("On the 5th of May", "2024-05-05 08:00:00 UTC");
-        assert_date_parsing!("On the 1st of January", "2024-01-01 08:00:00 UTC");
+        assert_date_parsing!("On 5th of May", "2024-05-05T08:00:00Z");
+        assert_date_parsing!("On the 5th of May", "2024-05-05T08:00:00Z");
+        assert_date_parsing!("On the 1st of January", "2024-01-01T08:00:00Z");
     }
 }
