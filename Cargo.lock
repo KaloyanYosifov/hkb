@@ -530,6 +530,7 @@ name = "hkb_daemon"
 version = "0.1.0"
 dependencies = [
  "dirs",
+ "hkb_core",
  "hkb_daemon_core",
  "tokio",
 ]

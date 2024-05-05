@@ -8,4 +8,5 @@ edition = "2021"
 [dependencies]
 dirs = { workspace = true }
 tokio = { workspace = true }
+hkb_core = { path = "../hkb_core", version = "0.1.0" }
 hkb_daemon_core = { path = "../hkb_daemon_core", version = "0.1.0" }

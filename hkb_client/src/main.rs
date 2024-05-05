@@ -39,7 +39,7 @@ fn main() -> RenderResult {
     let mut navigation =
         Navigation::new("HKB".to_string(), vec![AppView::Main, AppView::Reminders]);
 
-    logger_init();
+    logger_init(None);
     terminal.clear()?;
 
     // TODO: do not use in memory sqlite database here
