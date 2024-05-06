@@ -1,5 +1,8 @@
-use diesel::{ExpressionMethods, QueryDsl, RunQueryDsl, SelectableHelper};
-use hkb_date::date::SimpleLocalDate;
+use diesel::{
+    sql_types::Date as SqlDateType, ExpressionMethods, IntoSql, QueryDsl, RunQueryDsl,
+    SelectableHelper,
+};
+use hkb_date::date::{Date, SimpleDate, Timezone};
 use log::debug;
 
 use crate::database::{
@@ -11,7 +14,7 @@ use crate::database::{
 
 #[derive(Debug)]
 pub struct CreateReminderData {
-    pub date: SimpleLocalDate,
+    pub date: SimpleDate,
     pub note: String,
 }
 
@@ -19,13 +22,13 @@ pub struct CreateReminderData {
 pub struct UpdateReminderData {
     pub id: i64,
     pub note: Option<String>,
-    pub date: Option<SimpleLocalDate>,
+    pub date: Option<SimpleDate>,
 }
 
 #[derive(Debug, Eq, PartialEq)]
 pub struct ReminderData {
     pub id: i64,
-    pub date: SimpleLocalDate,
+    pub date: SimpleDate,
     pub note: String,
 }
 
@@ -34,7 +37,7 @@ impl Into<ReminderData> for Reminder {
         ReminderData {
             id: self.id,
             note: self.note,
-            date: SimpleLocalDate::parse_from_rfc3339(self.date).unwrap(),
+            date: SimpleDate::parse_from_rfc3339(self.date).unwrap(),
         }
     }
 }
@@ -67,11 +70,28 @@ impl Into<UpdateReminder> for UpdateReminderData {
     }
 }
 
+enum FetchRemindersOption {
+    Between {
+        end_date: SimpleDate,
+        start_date: SimpleDate,
+    },
+}
+
 pub fn fetch_reminders() -> DatabaseResult<Vec<ReminderData>> {
     database::within_database(|conn| {
+        let mut d1 = SimpleDate::local();
+        let mut d2 = SimpleDate::local();
+
+        d1.sub_duration(hkb_date::date::Duration::Hour(5));
+        d2.add_duration(hkb_date::date::Duration::Hour(4));
+
         let reminders: Vec<ReminderData> = reminders_dsl::reminders
             .select(Reminder::as_select())
             .order_by(reminders_dsl::id.asc())
+            .filter(reminders_dsl::date.between(
+                d1.to_string().into_sql::<SqlDateType>(),
+                d2.to_string().into_sql::<SqlDateType>(),
+            ))
             .get_results(conn)?
             .into_iter()
             .map(|reminder| reminder.into())
@@ -147,7 +167,7 @@ mod tests {
     use ctor::ctor;
     use diesel::sql_query;
     use diesel_migrations::{embed_migrations, EmbeddedMigrations};
-    use hkb_date::date::{Duration, SimpleLocalDate};
+    use hkb_date::date::{Date, Duration, SimpleDate};
     use serial_test::serial;
     pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("./migrations");
 
@@ -155,7 +175,7 @@ mod tests {
 
     macro_rules! create_a_reminder {
         () => {{
-            let date = SimpleLocalDate::now();
+            let date = SimpleDate::local();
             let reminder_data = CreateReminderData {
                 date,
                 note: "Testing".to_owned(),
@@ -207,6 +227,8 @@ mod tests {
         ];
         let fetched_reminders = fetch_reminders().unwrap();
 
+        assert_eq!(reminders.len(), fetched_reminders.len());
+
         for i in 0..fetched_reminders.len() {
             let reminder = fetched_reminders.get(i).unwrap();
             let expected_reminder = reminders.get(i).unwrap();
@@ -218,7 +240,7 @@ mod tests {
     #[test]
     #[serial]
     fn it_can_create_a_reminder() {
-        let date = SimpleLocalDate::now();
+        let date = SimpleDate::local();
         let reminder_data = CreateReminderData {
             date,
             note: "Testing".to_owned(),
@@ -249,7 +271,7 @@ mod tests {
     #[serial]
     fn it_can_update_date_of_a_reminder() {
         let reminder = create_a_reminder!();
-        let mut date = SimpleLocalDate::now();
+        let mut date = SimpleDate::local();
         date.add_duration(Duration::Month(1)).unwrap();
 
         let expected_date = date.to_string();

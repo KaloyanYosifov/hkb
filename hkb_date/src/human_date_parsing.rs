@@ -3,7 +3,7 @@ use pest::Parser;
 use pest_derive::Parser;
 use thiserror::Error as ThisError;
 
-use crate::date::{Date, DateError, Duration, DurationError};
+use crate::date::{Date, DateError, Duration, DurationError, SimpleDate};
 
 #[derive(ThisError, Debug)]
 pub enum DateParsingError {
@@ -32,7 +32,7 @@ const MONTHS: [&str; 12] = [
     "december",
 ];
 
-type DateParsingResult<T> = Result<T, DateParsingError>;
+type DateParsingResult = Result<SimpleDate, DateParsingError>;
 
 fn ctoi(char: char) -> u8 {
     // 48 is the ascii code of 0
@@ -43,18 +43,18 @@ fn ctoi(char: char) -> u8 {
 #[grammar = "../grammar/human_date.pest"]
 struct PestHumanDateParser;
 
-pub struct HumanDateParser<T: Date> {
-    start_date: T,
+pub struct HumanDateParser {
+    start_date: SimpleDate,
 }
 
-impl<T: Date + Clone> HumanDateParser<T> {
-    pub fn new(start_date: T) -> Self {
+impl HumanDateParser {
+    pub fn new(start_date: SimpleDate) -> Self {
         Self { start_date }
     }
 }
 
-impl<T: Date + Clone> HumanDateParser<T> {
-    fn parse_in_sentence(&self, sentence: Pair<Rule>) -> DateParsingResult<T> {
+impl HumanDateParser {
+    fn parse_in_sentence(&self, sentence: Pair<Rule>) -> DateParsingResult {
         let mut inner = sentence.into_inner();
         let mut pair = inner.next().unwrap();
         let mut duration_value: i64 = 0;
@@ -77,7 +77,7 @@ impl<T: Date + Clone> HumanDateParser<T> {
         Ok(date)
     }
 
-    fn parse_on_sentence(&self, sentence: Pair<Rule>) -> DateParsingResult<T> {
+    fn parse_on_sentence(&self, sentence: Pair<Rule>) -> DateParsingResult {
         // We are unwrapping because we are sure we have these in the
         // data structure
         let (day, month) = {
@@ -96,7 +96,7 @@ impl<T: Date + Clone> HumanDateParser<T> {
         Ok(date)
     }
 
-    fn parse_at_sentence(&self, sentence: Pair<Rule>) -> DateParsingResult<T> {
+    fn parse_at_sentence(&self, sentence: Pair<Rule>) -> DateParsingResult {
         let mut inner = sentence.into_inner();
         let hour = inner.next().unwrap().as_str().parse::<u32>().unwrap();
         let minute = inner.next().unwrap().as_str().parse::<u32>().unwrap();
@@ -124,12 +124,12 @@ impl<T: Date + Clone> HumanDateParser<T> {
     /// ```rust
     /// use hkb_date::{HumanDateParser};
     /// use hkb_date::date::*;
-    /// let date_parser = HumanDateParser::new(SimpleUtcDate::now());
+    /// let date_parser = HumanDateParser::new(SimpleDate::local());
     /// let input = "In 5 minutes";
     /// println!("{}", date_parser.parse(input).unwrap().to_string());
     ///
     /// ```
-    pub fn parse(&self, input: impl AsRef<str>) -> DateParsingResult<T> {
+    pub fn parse(&self, input: impl AsRef<str>) -> DateParsingResult {
         let lowercased = input.as_ref().to_lowercase();
         let mut result = match PestHumanDateParser::parse(Rule::SENTENCE, &lowercased) {
             Ok(result) => result,
@@ -149,12 +149,12 @@ impl<T: Date + Clone> HumanDateParser<T> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::date::SimpleUtcDate;
+    use crate::date::SimpleDate;
 
     macro_rules! assert_date_parsing {
         ($input:literal, $expected: literal) => {
             let date =
-                SimpleUtcDate::parse_from_str("2024-04-14 08:00:00", "%Y-%m-%d %H:%M:%S").unwrap();
+                SimpleDate::parse_from_str("2024-04-14 08:00:00", "%Y-%m-%d %H:%M:%S").unwrap();
             let date_parser = HumanDateParser::new(date);
             let date = date_parser
                 .parse($input)

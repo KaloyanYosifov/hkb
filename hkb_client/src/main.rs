@@ -9,7 +9,6 @@ use ratatui::widgets::{Block, Borders};
 use std::{io::Error as IOError, thread, time::Duration};
 use thiserror::Error as ThisError;
 
-mod actions;
 mod app_state;
 mod apps;
 mod components;
