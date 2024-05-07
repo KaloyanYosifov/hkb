@@ -1,8 +1,8 @@
 use diesel::{
-    sql_types::Date as SqlDateType, ExpressionMethods, IntoSql, QueryDsl, RunQueryDsl,
+    dsl::today, sql_types::Date as SqlDateType, ExpressionMethods, IntoSql, QueryDsl, RunQueryDsl,
     SelectableHelper,
 };
-use hkb_date::date::{Date, SimpleDate, Timezone};
+use hkb_date::date::SimpleDate;
 use log::debug;
 
 use crate::database::{
@@ -70,28 +70,39 @@ impl Into<UpdateReminder> for UpdateReminderData {
     }
 }
 
-enum FetchRemindersOption {
+pub enum FetchRemindersOption {
     Between {
         end_date: SimpleDate,
         start_date: SimpleDate,
     },
 }
 
-pub fn fetch_reminders() -> DatabaseResult<Vec<ReminderData>> {
+pub fn fetch_reminders(
+    options: Option<Vec<FetchRemindersOption>>,
+) -> DatabaseResult<Vec<ReminderData>> {
     database::within_database(|conn| {
-        let mut d1 = SimpleDate::local();
-        let mut d2 = SimpleDate::local();
-
-        d1.sub_duration(hkb_date::date::Duration::Hour(5));
-        d2.add_duration(hkb_date::date::Duration::Hour(4));
-
-        let reminders: Vec<ReminderData> = reminders_dsl::reminders
+        let mut query = reminders_dsl::reminders
             .select(Reminder::as_select())
             .order_by(reminders_dsl::id.asc())
-            .filter(reminders_dsl::date.between(
-                d1.to_string().into_sql::<SqlDateType>(),
-                d2.to_string().into_sql::<SqlDateType>(),
-            ))
+            .into_boxed();
+
+        if let Some(options) = options {
+            for option in options {
+                match option {
+                    FetchRemindersOption::Between {
+                        end_date,
+                        start_date,
+                    } => {
+                        query = query.filter(reminders_dsl::date.between(
+                            start_date.to_string().into_sql::<SqlDateType>(),
+                            end_date.to_string().into_sql::<SqlDateType>(),
+                        ));
+                    }
+                }
+            }
+        }
+
+        let reminders: Vec<ReminderData> = query
             .get_results(conn)?
             .into_iter()
             .map(|reminder| reminder.into())
@@ -167,7 +178,7 @@ mod tests {
     use ctor::ctor;
     use diesel::sql_query;
     use diesel_migrations::{embed_migrations, EmbeddedMigrations};
-    use hkb_date::date::{Date, Duration, SimpleDate};
+    use hkb_date::date::{Duration, SimpleDate};
     use serial_test::serial;
     pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("./migrations");
 
@@ -175,9 +186,19 @@ mod tests {
 
     macro_rules! create_a_reminder {
         () => {{
-            let date = SimpleDate::local();
+            let date =
+                SimpleDate::parse_from_str("2024-04-05 08:00:00", "%Y-%m-%d %H:%M:%S").unwrap();
             let reminder_data = CreateReminderData {
                 date,
+                note: "Testing".to_owned(),
+            };
+
+            create_reminder(reminder_data).unwrap()
+        }};
+
+        ($date:expr) => {{
+            let reminder_data = CreateReminderData {
+                date: $date,
                 note: "Testing".to_owned(),
             };
 
@@ -225,7 +246,7 @@ mod tests {
             create_a_reminder!(),
             create_a_reminder!(),
         ];
-        let fetched_reminders = fetch_reminders().unwrap();
+        let fetched_reminders = fetch_reminders(None).unwrap();
 
         assert_eq!(reminders.len(), fetched_reminders.len());
 
@@ -235,6 +256,51 @@ mod tests {
 
             assert_eq!(expected_reminder, reminder);
         }
+    }
+
+    #[test]
+    #[serial]
+    fn it_can_fetch_reminders_in_between() {
+        truncate_table!();
+
+        let d1 = SimpleDate::parse_from_str("2024-03-11 08:00:00", "%Y-%m-%d %H:%M:%S").unwrap();
+        let d2 = SimpleDate::parse_from_str("2024-03-12 08:00:00", "%Y-%m-%d %H:%M:%S").unwrap();
+        let start_date =
+            SimpleDate::parse_from_str("2024-03-01 08:00:00", "%Y-%m-%d %H:%M:%S").unwrap();
+        let end_date =
+            SimpleDate::parse_from_str("2024-04-01 08:00:00", "%Y-%m-%d %H:%M:%S").unwrap();
+
+        let reminders = vec![
+            create_a_reminder!(d1.clone()),
+            create_a_reminder!(d2.clone()),
+            create_a_reminder!(),
+            create_a_reminder!(),
+        ];
+        let fetched_reminders = fetch_reminders(Some(vec![FetchRemindersOption::Between {
+            end_date,
+            start_date,
+        }]))
+        .unwrap();
+
+        assert_eq!(2, fetched_reminders.len());
+
+        assert_eq!(reminders.get(0).unwrap(), fetched_reminders.get(0).unwrap());
+        assert_eq!(reminders.get(1).unwrap(), fetched_reminders.get(1).unwrap());
+
+        let start_date =
+            SimpleDate::parse_from_str("2024-04-01 08:00:00", "%Y-%m-%d %H:%M:%S").unwrap();
+        let end_date =
+            SimpleDate::parse_from_str("2024-05-01 08:00:00", "%Y-%m-%d %H:%M:%S").unwrap();
+        let fetched_reminders = fetch_reminders(Some(vec![FetchRemindersOption::Between {
+            end_date,
+            start_date,
+        }]))
+        .unwrap();
+
+        assert_eq!(2, fetched_reminders.len());
+
+        assert_eq!(reminders.get(2).unwrap(), fetched_reminders.get(0).unwrap());
+        assert_eq!(reminders.get(3).unwrap(), fetched_reminders.get(1).unwrap());
     }
 
     #[test]
