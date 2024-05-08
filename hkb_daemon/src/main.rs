@@ -1,5 +1,7 @@
 use std::time::Duration;
 
+use diesel_migrations::{embed_migrations, EmbeddedMigrations};
+use hkb_core::database::init_database;
 use hkb_core::database::services::reminders::*;
 use hkb_core::logger::{self, debug, error, info, AppenderType};
 use hkb_daemon_core::server::Server;
@@ -8,6 +10,8 @@ use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
     net::{unix::SocketAddr, UnixStream},
 };
+
+pub const CORE_MIGRATIONS: EmbeddedMigrations = embed_migrations!("../hkb_core/migrations");
 
 async fn process_connection(mut socket: UnixStream, addr: SocketAddr) {
     println!("Got a client: {:?} - {:?}", socket, addr);
@@ -19,6 +23,9 @@ async fn process_connection(mut socket: UnixStream, addr: SocketAddr) {
 
 #[tokio::main]
 async fn main() {
+    let database_file_path = dirs::data_local_dir().unwrap().join("hkb/db");
+    init_database(database_file_path.to_str().unwrap(), vec![CORE_MIGRATIONS]).unwrap();
+
     logger::init(Some(vec![AppenderType::FILE, AppenderType::STDOUT]));
 
     let server = Server::bind();

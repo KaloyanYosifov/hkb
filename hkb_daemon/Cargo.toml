@@ -8,6 +8,7 @@ edition = "2021"
 [dependencies]
 dirs = { workspace = true }
 tokio = { workspace = true }
-hkb_core = { path = "../hkb_core", version = "0.1.0", features = ["sqlite-database"] }
+diesel_migrations = { workspace = true }
 hkb_date = { path = "../hkb_date", version = "0.1.0" }
 hkb_daemon_core = { path = "../hkb_daemon_core", version = "0.1.0" }
+hkb_core = { path = "../hkb_core", version = "0.1.0", features = ["sqlite-database"] }

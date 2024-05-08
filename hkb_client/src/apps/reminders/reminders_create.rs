@@ -128,7 +128,7 @@ impl RemindersView for RemindersCreate {
             if self.validate() {
                 let data = CreateReminderData {
                     note: self.message_input.buffer.to_owned(),
-                    date: self.parsed_date.take().unwrap(),
+                    remind_at: self.parsed_date.take().unwrap(),
                 };
                 return Some(Message::CreateReminder(data));
             }

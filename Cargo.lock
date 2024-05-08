@@ -501,6 +501,7 @@ version = "0.1.0"
 dependencies = [
  "crossterm",
  "diesel_migrations",
+ "dirs",
  "hkb_core",
  "hkb_date",
  "parking_lot",
@@ -529,6 +530,7 @@ dependencies = [
 name = "hkb_daemon"
 version = "0.1.0"
 dependencies = [
+ "diesel_migrations",
  "dirs",
  "hkb_core",
  "hkb_daemon_core",

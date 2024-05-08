@@ -42,8 +42,12 @@ fn main() -> RenderResult {
     terminal.clear()?;
 
     // TODO: do not use in memory sqlite database here
-    init_database(":memory:", vec![CORE_MIGRATIONS, APP_MIGRATIONS])
-        .expect("Failed to initialize database!");
+    let database_file_path = dirs::data_local_dir().unwrap().join("hkb/db");
+    init_database(
+        database_file_path.to_str().unwrap(),
+        vec![CORE_MIGRATIONS, APP_MIGRATIONS],
+    )
+    .expect("Failed to initialize database!");
 
     while !should_quit {
         while event::poll(Duration::ZERO).unwrap() {
