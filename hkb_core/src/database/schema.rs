@@ -2,6 +2,7 @@ diesel::table! {
     reminders (id) {
         id -> Int8,
         note -> Varchar,
-        date -> Date,
+        remind_at -> Date,
+        created_at -> Date,
     }
 }

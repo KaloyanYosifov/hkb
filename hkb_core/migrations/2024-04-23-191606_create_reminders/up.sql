@@ -1,5 +1,6 @@
 CREATE TABLE reminders (
   id INTEGER PRIMARY KEY,
-  note VARCHAR NOT NULL,
-  date VARCHAR NOT NULL
+  note TEXT NOT NULL,
+  remind_at TIMESTAMP NOT NULL,
+  created_at TIMESTAMP NOT NULL
 )

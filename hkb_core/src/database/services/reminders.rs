@@ -1,5 +1,5 @@
 use diesel::{
-    dsl::today, sql_types::Date as SqlDateType, ExpressionMethods, IntoSql, QueryDsl, RunQueryDsl,
+    sql_types::Date as SqlDateType, ExpressionMethods, IntoSql, QueryDsl, RunQueryDsl,
     SelectableHelper,
 };
 use hkb_date::date::SimpleDate;
@@ -14,22 +14,23 @@ use crate::database::{
 
 #[derive(Debug)]
 pub struct CreateReminderData {
-    pub date: SimpleDate,
     pub note: String,
+    pub remind_at: SimpleDate,
 }
 
 #[derive(Debug)]
 pub struct UpdateReminderData {
     pub id: i64,
     pub note: Option<String>,
-    pub date: Option<SimpleDate>,
+    pub remind_at: Option<SimpleDate>,
 }
 
 #[derive(Debug, Eq, PartialEq)]
 pub struct ReminderData {
     pub id: i64,
-    pub date: SimpleDate,
     pub note: String,
+    pub remind_at: SimpleDate,
+    pub created_at: SimpleDate,
 }
 
 impl Into<ReminderData> for Reminder {
@@ -37,7 +38,8 @@ impl Into<ReminderData> for Reminder {
         ReminderData {
             id: self.id,
             note: self.note,
-            date: SimpleDate::parse_from_rfc3339(self.date).unwrap(),
+            remind_at: SimpleDate::parse_from_rfc3339(self.remind_at).unwrap(),
+            created_at: SimpleDate::parse_from_rfc3339(self.created_at).unwrap(),
         }
     }
 }
@@ -47,7 +49,8 @@ impl Into<Reminder> for ReminderData {
         Reminder {
             id: self.id,
             note: self.note,
-            date: self.date.to_string(),
+            remind_at: self.remind_at.to_string(),
+            created_at: self.created_at.to_string(),
         }
     }
 }
@@ -56,7 +59,8 @@ impl Into<CreateReminder> for CreateReminderData {
     fn into(self) -> CreateReminder {
         CreateReminder {
             note: self.note,
-            date: self.date.to_string(),
+            remind_at: self.remind_at.to_string(),
+            created_at: SimpleDate::local().to_string(),
         }
     }
 }
@@ -65,7 +69,7 @@ impl Into<UpdateReminder> for UpdateReminderData {
     fn into(self) -> UpdateReminder {
         UpdateReminder {
             note: self.note,
-            date: self.date.map(|date| date.to_string()),
+            remind_at: self.remind_at.map(|date| date.to_string()),
         }
     }
 }
@@ -93,7 +97,7 @@ pub fn fetch_reminders(
                         end_date,
                         start_date,
                     } => {
-                        query = query.filter(reminders_dsl::date.between(
+                        query = query.filter(reminders_dsl::remind_at.between(
                             start_date.to_string().into_sql::<SqlDateType>(),
                             end_date.to_string().into_sql::<SqlDateType>(),
                         ));
@@ -189,7 +193,7 @@ mod tests {
             let date =
                 SimpleDate::parse_from_str("2024-04-05 08:00:00", "%Y-%m-%d %H:%M:%S").unwrap();
             let reminder_data = CreateReminderData {
-                date,
+                remind_at: date,
                 note: "Testing".to_owned(),
             };
 
@@ -198,7 +202,7 @@ mod tests {
 
         ($date:expr) => {{
             let reminder_data = CreateReminderData {
-                date: $date,
+                remind_at: $date,
                 note: "Testing".to_owned(),
             };
 
@@ -233,7 +237,10 @@ mod tests {
 
         assert_eq!(reminder.id, fetched_reminder.id);
         assert_eq!(reminder.note, fetched_reminder.note);
-        assert_eq!(reminder.date.to_string(), fetched_reminder.date.to_string());
+        assert_eq!(
+            reminder.remind_at.to_string(),
+            fetched_reminder.remind_at.to_string()
+        );
     }
 
     #[test]
@@ -308,13 +315,13 @@ mod tests {
     fn it_can_create_a_reminder() {
         let date = SimpleDate::local();
         let reminder_data = CreateReminderData {
-            date,
+            remind_at: date,
             note: "Testing".to_owned(),
         };
         let reminder = create_reminder(reminder_data).unwrap();
 
         assert_eq!("Testing", reminder.note);
-        assert_eq!(date.to_string(), reminder.date.to_string());
+        assert_eq!(date.to_string(), reminder.remind_at.to_string());
     }
 
     #[test]
@@ -324,13 +331,16 @@ mod tests {
         let updated_reminder = update_reminder(UpdateReminderData {
             id: reminder.id,
             note: Some("Testing a new".to_owned()),
-            date: None,
+            remind_at: None,
         })
         .unwrap();
 
         assert_eq!("Testing a new", updated_reminder.note);
         assert_ne!(reminder.note, updated_reminder.note);
-        assert_eq!(reminder.date.to_string(), updated_reminder.date.to_string());
+        assert_eq!(
+            reminder.remind_at.to_string(),
+            updated_reminder.remind_at.to_string()
+        );
     }
 
     #[test]
@@ -344,13 +354,13 @@ mod tests {
         let updated_reminder = update_reminder(UpdateReminderData {
             id: reminder.id,
             note: None,
-            date: Some(date),
+            remind_at: Some(date),
         })
         .unwrap();
 
         assert_eq!(reminder.note, updated_reminder.note);
-        assert_ne!(reminder.date.to_string(), expected_date);
-        assert_eq!(expected_date, updated_reminder.date.to_string());
+        assert_ne!(reminder.remind_at.to_string(), expected_date);
+        assert_eq!(expected_date, updated_reminder.remind_at.to_string());
     }
 
     #[test]

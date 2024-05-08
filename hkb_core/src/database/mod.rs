@@ -5,7 +5,7 @@ use log::{debug, error};
 use parking_lot::Mutex;
 use thiserror::Error as ThisError;
 
-pub mod models;
+pub(crate) mod models;
 mod schema;
 pub mod services;
 
