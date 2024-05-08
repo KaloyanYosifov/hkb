@@ -75,7 +75,7 @@ impl Into<UpdateReminder> for UpdateReminderData {
 }
 
 pub enum FetchRemindersOption {
-    Between {
+    RemindAtBetween {
         end_date: SimpleDate,
         start_date: SimpleDate,
     },
@@ -93,7 +93,7 @@ pub fn fetch_reminders(
         if let Some(options) = options {
             for option in options {
                 match option {
-                    FetchRemindersOption::Between {
+                    FetchRemindersOption::RemindAtBetween {
                         end_date,
                         start_date,
                     } => {
@@ -283,11 +283,12 @@ mod tests {
             create_a_reminder!(),
             create_a_reminder!(),
         ];
-        let fetched_reminders = fetch_reminders(Some(vec![FetchRemindersOption::Between {
-            end_date,
-            start_date,
-        }]))
-        .unwrap();
+        let fetched_reminders =
+            fetch_reminders(Some(vec![FetchRemindersOption::RemindAtBetween {
+                end_date,
+                start_date,
+            }]))
+            .unwrap();
 
         assert_eq!(2, fetched_reminders.len());
 
@@ -298,11 +299,12 @@ mod tests {
             SimpleDate::parse_from_str("2024-04-01 08:00:00", "%Y-%m-%d %H:%M:%S").unwrap();
         let end_date =
             SimpleDate::parse_from_str("2024-05-01 08:00:00", "%Y-%m-%d %H:%M:%S").unwrap();
-        let fetched_reminders = fetch_reminders(Some(vec![FetchRemindersOption::Between {
-            end_date,
-            start_date,
-        }]))
-        .unwrap();
+        let fetched_reminders =
+            fetch_reminders(Some(vec![FetchRemindersOption::RemindAtBetween {
+                end_date,
+                start_date,
+            }]))
+            .unwrap();
 
         assert_eq!(2, fetched_reminders.len());
 
