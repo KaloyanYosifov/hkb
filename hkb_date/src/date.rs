@@ -166,46 +166,9 @@ impl std::ops::Sub<Duration> for NaiveDateTime {
     }
 }
 
-pub type DateResult = Result<(), DateError>;
+pub type DateResult<T> = Result<T, DateError>;
 
 type DateUnit = u32;
-
-pub trait Date: ToString {
-    type DateTime;
-
-    fn add_duration(&mut self, duration: Duration) -> DateResult;
-    fn sub_duration(&mut self, duration: Duration) -> DateResult;
-    fn set_year(&mut self, year: i32) -> DateResult;
-    fn set_month(&mut self, month: DateUnit) -> DateResult;
-    fn set_day(&mut self, day: DateUnit) -> DateResult;
-    fn set_hour(&mut self, hour: DateUnit) -> DateResult;
-    fn set_minute(&mut self, minute: DateUnit) -> DateResult;
-    fn set_second(&mut self, second: DateUnit) -> DateResult;
-
-    fn set_ymd(&mut self, year: i32, month: DateUnit, date: DateUnit) -> DateResult;
-    fn set_hms(&mut self, hour: DateUnit, minute: DateUnit, second: DateUnit) -> DateResult;
-    fn set_ymdhms(
-        &mut self,
-        year: i32,
-        month: DateUnit,
-        date: DateUnit,
-        hour: DateUnit,
-        minute: DateUnit,
-        second: DateUnit,
-    ) -> DateResult;
-
-    fn year(&self) -> i32;
-    fn month(&self) -> DateUnit;
-    fn day(&self) -> DateUnit;
-    fn hour(&self) -> DateUnit;
-    fn minute(&self) -> DateUnit;
-    fn second(&self) -> DateUnit;
-
-    fn get_timezone(&self) -> Timezone;
-
-    #[cfg(feature = "chrono")]
-    fn to_chrono_date(&self) -> Self::DateTime;
-}
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub struct SimpleDate {
@@ -249,55 +212,55 @@ impl SimpleDate {
         })
     }
 
-    pub fn add_duration(&mut self, duration: Duration) -> DateResult {
+    pub fn add_duration(mut self, duration: Duration) -> DateResult<Self> {
         self.date = self.date + duration;
 
-        Ok(())
+        Ok(self)
     }
 
-    pub fn sub_duration(&mut self, duration: Duration) -> DateResult {
+    pub fn sub_duration(mut self, duration: Duration) -> DateResult<Self> {
         self.date = self.date - duration;
 
-        Ok(())
+        Ok(self)
     }
 
-    pub fn set_year(&mut self, year: i32) -> DateResult {
+    pub fn set_year(&mut self, year: i32) -> DateResult<()> {
         self.date = set_year(self.date, year)?;
 
         Ok(())
     }
 
-    pub fn set_month(&mut self, month: DateUnit) -> DateResult {
+    pub fn set_month(&mut self, month: DateUnit) -> DateResult<()> {
         self.date = set_month(self.date, month)?;
 
         Ok(())
     }
 
-    pub fn set_day(&mut self, day: DateUnit) -> DateResult {
+    pub fn set_day(&mut self, day: DateUnit) -> DateResult<()> {
         self.date = set_day(self.date, day)?;
 
         Ok(())
     }
 
-    pub fn set_hour(&mut self, hour: DateUnit) -> DateResult {
+    pub fn set_hour(&mut self, hour: DateUnit) -> DateResult<()> {
         self.date = set_hour(self.date, hour)?;
 
         Ok(())
     }
 
-    pub fn set_minute(&mut self, minute: DateUnit) -> DateResult {
+    pub fn set_minute(&mut self, minute: DateUnit) -> DateResult<()> {
         self.date = set_minute(self.date, minute)?;
 
         Ok(())
     }
 
-    pub fn set_second(&mut self, second: DateUnit) -> DateResult {
+    pub fn set_second(&mut self, second: DateUnit) -> DateResult<()> {
         self.date = set_second(self.date, second)?;
 
         Ok(())
     }
 
-    pub fn set_ymd(&mut self, year: i32, month: DateUnit, date: DateUnit) -> DateResult {
+    pub fn set_ymd(&mut self, year: i32, month: DateUnit, date: DateUnit) -> DateResult<()> {
         self.date = NaiveDate::from_ymd_opt(year, month, date)
             .ok_or_else(|| DateError::FailedToSetTime)?
             .and_hms_opt(self.date.hour(), self.date.minute(), self.date.second())
@@ -306,7 +269,12 @@ impl SimpleDate {
         Ok(())
     }
 
-    pub fn set_hms(&mut self, hour: DateUnit, minute: DateUnit, second: DateUnit) -> DateResult {
+    pub fn set_hms(
+        &mut self,
+        hour: DateUnit,
+        minute: DateUnit,
+        second: DateUnit,
+    ) -> DateResult<()> {
         let time = NaiveTime::from_hms_opt(hour, minute, second)
             .ok_or_else(|| DateError::FailedToSetTime)?;
 
@@ -323,7 +291,7 @@ impl SimpleDate {
         hour: DateUnit,
         minute: DateUnit,
         second: DateUnit,
-    ) -> DateResult {
+    ) -> DateResult<()> {
         self.date = NaiveDate::from_ymd_opt(year, month, date)
             .ok_or_else(|| DateError::FailedToSetTime)?
             .and_hms_opt(hour, minute, second)

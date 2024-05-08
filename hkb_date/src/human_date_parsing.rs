@@ -3,7 +3,7 @@ use pest::Parser;
 use pest_derive::Parser;
 use thiserror::Error as ThisError;
 
-use crate::date::{Date, DateError, Duration, DurationError, SimpleDate};
+use crate::date::{DateError, Duration, DurationError, SimpleDate};
 
 #[derive(ThisError, Debug)]
 pub enum DateParsingError {
@@ -70,9 +70,7 @@ impl HumanDateParser {
 
         let duration = pair.as_span().as_str();
         let duration = Duration::from_string(duration, duration_value as u32)?;
-        let mut date = self.start_date.clone();
-
-        date.add_duration(duration)?;
+        let date = self.start_date.clone().add_duration(duration)?;
 
         Ok(date)
     }

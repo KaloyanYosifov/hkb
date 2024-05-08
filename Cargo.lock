@@ -532,6 +532,7 @@ dependencies = [
  "dirs",
  "hkb_core",
  "hkb_daemon_core",
+ "hkb_date",
  "tokio",
 ]
 

@@ -1,7 +1,9 @@
 use std::time::Duration;
 
+use hkb_core::database::services::reminders::*;
 use hkb_core::logger::{self, debug, error, info, AppenderType};
 use hkb_daemon_core::server::Server;
+use hkb_date::date::SimpleDate;
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
     net::{unix::SocketAddr, UnixStream},
@@ -27,6 +29,17 @@ async fn main() {
     tokio::spawn(async {
         loop {
             debug!(target: "DAEMON", "Checking reminders to notify!");
+
+            let reminders = fetch_reminders(Some(vec![FetchRemindersOption::RemindAtBetween {
+                start_date: SimpleDate::local(),
+                end_date: SimpleDate::local()
+                    .add_duration(hkb_date::date::Duration::Minute(15))
+                    .unwrap(),
+            }]))
+            .unwrap_or(vec![]);
+
+            debug!(target: "DAEMON", "Found {} reminders to notify!", reminders.len());
+            debug!("{:?}", reminders);
 
             std::thread::sleep(Duration::from_secs(5));
         }

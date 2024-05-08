@@ -349,8 +349,9 @@ mod tests {
     #[serial]
     fn it_can_update_date_of_a_reminder() {
         let reminder = create_a_reminder!();
-        let mut date = SimpleDate::local();
-        date.add_duration(Duration::Month(1)).unwrap();
+        let mut date = SimpleDate::local()
+            .add_duration(Duration::Month(1))
+            .unwrap();
 
         let expected_date = date.to_string();
         let updated_reminder = update_reminder(UpdateReminderData {
