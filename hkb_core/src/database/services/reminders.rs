@@ -182,7 +182,8 @@ mod tests {
     use ctor::ctor;
     use diesel::sql_query;
     use diesel_migrations::{embed_migrations, EmbeddedMigrations};
-    use hkb_date::date::{Duration, SimpleDate};
+    use hkb_date::date::SimpleDate;
+    use hkb_date::duration::Duration;
     use serial_test::serial;
     pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("./migrations");
 

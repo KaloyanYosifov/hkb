@@ -1,10 +1,7 @@
-use chrono::{
-    DateTime, Datelike, Local, NaiveDate, NaiveDateTime, NaiveTime, ParseError, TimeDelta,
-    TimeZone, Timelike, Utc,
-};
+use crate::duration::*;
+use chrono::{Datelike, Local, NaiveDate, NaiveDateTime, NaiveTime, ParseError, Timelike, Utc};
+use std::time::Duration as STDDuration;
 use thiserror::Error as ThisError;
-
-const MONTHS_IN_A_YEAR: u32 = 12;
 
 #[derive(ThisError, Debug)]
 pub enum DateError {
@@ -21,149 +18,10 @@ pub enum DateError {
     FailedToSetTime,
 }
 
-#[derive(ThisError, Debug)]
-pub enum DurationError {
-    #[error("Invalid duration specified: {0}")]
-    InvalidDurationSpecified(String),
-}
-
 #[derive(PartialEq, Eq, Debug, Copy, Clone)]
 pub enum Timezone {
     UTC,
     Local,
-}
-
-// TODO: do we need negative values here?
-// For me a duration is forwards in time
-pub enum Duration {
-    Minute(DateUnit),
-    Hour(DateUnit),
-    Day(DateUnit),
-    Week(DateUnit),
-    Month(DateUnit),
-    Year(DateUnit),
-}
-
-impl Duration {
-    pub fn from_string(duration: &str, value: DateUnit) -> Result<Self, DurationError> {
-        let duration = match duration {
-            "minute" => Self::Minute(value),
-            "hour" => Self::Hour(value),
-            "day" => Self::Day(value),
-            "week" => Self::Week(value),
-            "month" => Self::Month(value),
-            "year" => Self::Year(value),
-            _ => return Err(DurationError::InvalidDurationSpecified(duration.into())),
-        };
-
-        Ok(duration)
-    }
-
-    pub fn get_value(&self) -> DateUnit {
-        match self {
-            Duration::Minute(v) => v,
-            Duration::Hour(v) => v,
-            Duration::Day(v) => v,
-            Duration::Week(v) => v,
-            Duration::Month(v) => v,
-            Duration::Year(v) => v,
-        }
-        .clone()
-    }
-}
-
-impl std::ops::Add<Duration> for NaiveDateTime {
-    type Output = NaiveDateTime;
-
-    fn add(self, rhs: Duration) -> Self::Output {
-        match rhs {
-            Duration::Minute(v) => self + (TimeDelta::minutes(v as i64)),
-            Duration::Hour(v) => self + (TimeDelta::hours(v as i64)),
-            Duration::Day(v) => self + (TimeDelta::days(v as i64)),
-            Duration::Week(v) => self + (TimeDelta::weeks(v as i64)),
-            Duration::Month(v) => {
-                let mut new_month = self.month() + v;
-
-                if new_month <= MONTHS_IN_A_YEAR {
-                    return self.with_month(new_month).unwrap();
-                }
-
-                let years_to_add = (new_month / MONTHS_IN_A_YEAR) as i32;
-                let new_date = self
-                    .with_year(self.year() + years_to_add)
-                    .unwrap_or_else(|| self.with_year(0).unwrap());
-
-                new_month = new_month % MONTHS_IN_A_YEAR;
-
-                if new_month == 0 {
-                    new_month = MONTHS_IN_A_YEAR;
-                }
-
-                new_date
-                    .with_month(new_month)
-                    .unwrap_or_else(|| new_date.with_month(1).unwrap())
-            }
-            Duration::Year(v) => {
-                let mut year = (self.year() as u32) + v;
-
-                if year > (i32::MAX as u32) {
-                    year = 0;
-                }
-
-                self.with_year(year as i32)
-                    .unwrap_or_else(|| self.with_year(0).unwrap())
-            }
-        }
-    }
-}
-
-impl std::ops::Sub<Duration> for NaiveDateTime {
-    type Output = NaiveDateTime;
-
-    fn sub(self, rhs: Duration) -> Self::Output {
-        match rhs {
-            Duration::Minute(v) => self - (TimeDelta::minutes(v as i64)),
-            Duration::Hour(v) => self - (TimeDelta::hours(v as i64)),
-            Duration::Day(v) => self - (TimeDelta::days(v as i64)),
-            Duration::Week(v) => self - (TimeDelta::weeks(v as i64)),
-            Duration::Month(v) => {
-                if self.month() > v {
-                    let mut month = self.month() - v;
-
-                    if month == 0 {
-                        month = 1;
-                    }
-
-                    return self.with_month(month).unwrap();
-                }
-
-                let mut new_month = MONTHS_IN_A_YEAR - (v - self.month());
-                let mut years_to_subtract = 1;
-
-                while new_month > MONTHS_IN_A_YEAR {
-                    new_month = new_month.checked_sub(MONTHS_IN_A_YEAR).unwrap_or(0);
-                    years_to_subtract += 1;
-                }
-
-                let new_date = {
-                    let new_year = self.year().checked_sub(years_to_subtract).unwrap_or(0);
-
-                    self.with_year(new_year)
-                        .unwrap_or_else(|| self.with_year(0).unwrap())
-                };
-
-                new_date
-                    .with_month(new_month)
-                    .unwrap_or_else(|| new_date.with_month(1).unwrap())
-            }
-            Duration::Year(v) => {
-                let year = (self.year() as u32).checked_sub(v).unwrap_or(0);
-
-                self.with_year(year as i32)
-                    .unwrap_or_else(|| self.with_year(0).unwrap())
-            }
-        }
-    }
 }
 
 pub type DateResult<T> = Result<T, DateError>;
@@ -342,6 +200,16 @@ impl ToString for SimpleDate {
         self.date
             .and_utc()
             .to_rfc3339_opts(chrono::SecondsFormat::Secs, true)
+    }
+}
+
+impl std::ops::Sub<SimpleDate> for SimpleDate {
+    type Output = STDDuration;
+
+    fn sub(self, rhs: SimpleDate) -> Self::Output {
+        (self.date - rhs.date)
+            .to_std()
+            .unwrap_or(STDDuration::new(0, 0))
     }
 }
 

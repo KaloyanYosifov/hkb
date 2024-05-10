@@ -3,7 +3,8 @@ use pest::Parser;
 use pest_derive::Parser;
 use thiserror::Error as ThisError;
 
-use crate::date::{DateError, Duration, DurationError, SimpleDate};
+use crate::date::{DateError, SimpleDate};
+use crate::duration::{Duration, DurationError};
 
 #[derive(ThisError, Debug)]
 pub enum DateParsingError {
