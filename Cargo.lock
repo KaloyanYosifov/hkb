@@ -820,10 +820,12 @@ dependencies = [
  "diesel_migrations",
  "dirs",
  "hkb_core",
+ "hkb_daemon_core",
  "hkb_date",
  "parking_lot",
  "ratatui",
  "thiserror",
+ "tokio",
 ]
 
 [[package]]

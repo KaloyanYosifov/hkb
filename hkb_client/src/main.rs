@@ -3,7 +3,7 @@ use components::{Component, Navigation};
 use crossterm::event::{self, Event, KeyCode};
 use diesel_migrations::{embed_migrations, EmbeddedMigrations};
 use hkb_core::database::init_database;
-use hkb_core::logger::init as logger_init;
+use hkb_core::logger::{info, init as logger_init};
 use ratatui::prelude::{Constraint, Direction, Layout};
 use ratatui::widgets::{Block, Borders};
 use std::{io::Error as IOError, thread, time::Duration};
@@ -30,7 +30,16 @@ pub enum RendererError {
 
 type RenderResult = Result<(), RendererError>;
 
-fn main() -> RenderResult {
+async fn connect_to_server() {
+    loop {
+        info!(target: "CLIENT", "here");
+
+        std::thread::sleep(Duration::from_secs(5))
+    }
+}
+
+#[tokio::main]
+async fn main() -> RenderResult {
     let mut terminal = terminal::init()?;
     let mut should_quit = false;
     let mut main_app = apps::MainApp::new();
@@ -48,6 +57,10 @@ fn main() -> RenderResult {
         vec![CORE_MIGRATIONS, APP_MIGRATIONS],
     )
     .expect("Failed to initialize database!");
+
+    tokio::spawn(async { connect_to_server().await });
+
+    info!(target: "CLIENT", "Oke");
 
     while !should_quit {
         while event::poll(Duration::ZERO).unwrap() {
