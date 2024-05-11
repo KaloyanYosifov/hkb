@@ -9,7 +9,6 @@ const FRAME_SIZE: usize = 16384;
 const FRAME_METADATA_SIZE: usize = size_of::<FrameMetadata>();
 const FRAME_DATA_SIZE: usize = FRAME_SIZE - FRAME_METADATA_SIZE;
 
-#[repr(C)]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Event {
     Ping,
@@ -17,14 +16,12 @@ pub enum Event {
     ReminderCreated(ReminderData),
 }
 
-#[repr(C)]
 pub struct FrameMetadata {
     size: u16,          // the size of the data
     frame_number: u8,   // max 255 packets, so a total of 4 MB of related data (256 * 16)
     related_frames: u8, // the amount of related frames that we have
 }
 
-#[repr(C)]
 pub struct Frame {
     metadata: FrameMetadata,
     data: [u8; FRAME_DATA_SIZE], // we allow 16kb info per frame (we deduct 2 + 1 + 1 meta info)
