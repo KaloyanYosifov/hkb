@@ -9,7 +9,7 @@ use ratatui::prelude::{Constraint, Direction, Layout};
 use ratatui::widgets::{Block, Borders};
 use std::{io::Error as IOError, thread, time::Duration};
 use thiserror::Error as ThisError;
-use tokio::io::{self, AsyncWriteExt};
+use tokio::io;
 
 mod app_state;
 mod apps;
