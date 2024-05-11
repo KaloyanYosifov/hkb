@@ -1,5 +1,6 @@
 use crate::duration::*;
 use chrono::{Datelike, Local, NaiveDate, NaiveDateTime, NaiveTime, ParseError, Timelike, Utc};
+use serde::{Deserialize, Serialize};
 use std::time::Duration as STDDuration;
 use thiserror::Error as ThisError;
 
@@ -18,7 +19,7 @@ pub enum DateError {
     FailedToSetTime,
 }
 
-#[derive(PartialEq, Eq, Debug, Copy, Clone)]
+#[derive(PartialEq, Eq, Debug, Copy, Clone, Serialize, Deserialize)]
 pub enum Timezone {
     UTC,
     Local,
@@ -28,7 +29,7 @@ pub type DateResult<T> = Result<T, DateError>;
 
 type DateUnit = u32;
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Serialize, Deserialize)]
 pub struct SimpleDate {
     date: NaiveDateTime,
     timezone: Timezone,

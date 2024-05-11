@@ -8,7 +8,9 @@ edition = "2021"
 [dependencies]
 pest = "2.7.9"
 pest_derive = "2.7.9"
-chrono = { version = "0.4.37", features = ["rkyv-64"] }
+serde = { workspace = true }
+serde_json = { workspace = true }
+chrono = { version = "0.4.37", features = ["rkyv-64", "serde"] }
 thiserror = { workspace = true }
 
 [features]

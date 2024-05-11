@@ -1,3 +1,4 @@
+pub use crate::dtos::reminders::*;
 use diesel::{
     sql_types::Date as SqlDateType, ExpressionMethods, IntoSql, QueryDsl, RunQueryDsl,
     SelectableHelper,
@@ -11,27 +12,6 @@ use crate::database::{
     schema::reminders::{self, dsl as reminders_dsl},
     DatabaseResult,
 };
-
-#[derive(Debug)]
-pub struct CreateReminderData {
-    pub note: String,
-    pub remind_at: SimpleDate,
-}
-
-#[derive(Debug)]
-pub struct UpdateReminderData {
-    pub id: i64,
-    pub note: Option<String>,
-    pub remind_at: Option<SimpleDate>,
-}
-
-#[derive(Debug, Eq, PartialEq)]
-pub struct ReminderData {
-    pub id: i64,
-    pub note: String,
-    pub remind_at: SimpleDate,
-    pub created_at: SimpleDate,
-}
 
 impl Into<ReminderData> for Reminder {
     fn into(self) -> ReminderData {

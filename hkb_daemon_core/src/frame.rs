@@ -1,5 +1,6 @@
 use std::mem::size_of;
 
+use hkb_core::dtos::reminders::ReminderData;
 use serde::{Deserialize, Serialize};
 
 pub type FrameSequence = Vec<Frame>;
@@ -9,10 +10,11 @@ const FRAME_METADATA_SIZE: usize = size_of::<FrameMetadata>();
 const FRAME_DATA_SIZE: usize = FRAME_SIZE - FRAME_METADATA_SIZE;
 
 #[repr(C)]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Event {
     Ping,
     Pong,
+    ReminderCreated(ReminderData),
 }
 
 #[repr(C)]
@@ -97,6 +99,7 @@ mod tests {
     use std::path::Path;
 
     use super::*;
+    use hkb_core::dtos::reminders::fakes;
 
     #[test]
     fn it_can_create_a_frame_from_bytes() {
@@ -158,6 +161,28 @@ mod tests {
     #[test]
     fn it_can_create_frame_sequence_from_event() {
         let event = Event::Ping;
+
+        let frames = Frame::from_event(event.clone());
+
+        assert_eq!(1, frames.len());
+
+        let frame = &frames[0];
+
+        assert_eq!(
+            serde_json::to_string(&event).unwrap().len(),
+            frame.size() as usize
+        );
+        assert_eq!(1, frame.frame_number());
+        assert_eq!(1, frame.related_frames());
+
+        let parsed_event: Event = serde_json::from_slice(frame.data()).unwrap();
+
+        assert_eq!(event, parsed_event);
+    }
+
+    #[test]
+    fn it_can_create_frame_sequence_from_complicated_event() {
+        let event = Event::ReminderCreated(fakes::create_reminder());
 
         let frames = Frame::from_event(event.clone());
 

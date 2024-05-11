@@ -40,9 +40,9 @@ pub type DatabaseResult<T> = Result<T, DatabaseError>;
 pub fn init_database(url: &str, migrations: Vec<EmbeddedMigrations>) -> Result<(), DatabaseError> {
     let mut connection = {
         cfg_if! {
-            if #[cfg(feature = "mysql-database")]  {
+            if #[cfg(feature = "mysql-database")] {
                 MysqlConnection::establish(url)
-            } else if #[cfg(feature = "sqlite-database")]  {
+            } else if #[cfg(feature = "sqlite-database")] {
                 SqliteConnection::establish(url)
             }
         }
