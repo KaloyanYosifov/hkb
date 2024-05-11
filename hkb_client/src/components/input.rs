@@ -269,7 +269,10 @@ impl<'a> Input<'a> {
         let offset = self.get_buffer_update_offset(state);
         let first_part = &state.buffer[..(offset.checked_sub(1).unwrap_or(0))];
         let second_part = &state.buffer[offset..];
-        let mut buffer = String::with_capacity(first_part.len() + second_part.len() - 1);
+        let buffer_capacity = (first_part.len() + second_part.len())
+            .checked_sub(1)
+            .unwrap_or(0);
+        let mut buffer = String::with_capacity(buffer_capacity);
 
         buffer.push_str(first_part);
         buffer.push_str(second_part);

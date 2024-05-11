@@ -8,19 +8,55 @@ use hkb_core::logger::{self, debug, error, info, AppenderType};
 use hkb_daemon_core::server::Server;
 use hkb_date::{date::SimpleDate, duration::HumanizedDuration};
 use notify_rust::{Notification, Timeout};
-use tokio::{
-    io::{AsyncReadExt, AsyncWriteExt},
-    net::{unix::SocketAddr, UnixStream},
-};
+use tokio::io;
+use tokio::net::UnixStream;
 
 pub const CORE_MIGRATIONS: EmbeddedMigrations = embed_migrations!("../hkb_core/migrations");
 
-async fn process_connection(mut socket: UnixStream, addr: SocketAddr) {
-    println!("Got a client: {:?} - {:?}", socket, addr);
-    socket.write_all(b"hello world").await.unwrap();
-    let mut response = String::new();
-    socket.read_to_string(&mut response).await.unwrap();
-    println!("{}", response);
+struct Client {
+    stream: UnixStream,
+}
+
+impl Client {
+    pub fn new(stream: UnixStream) -> Self {
+        Self { stream }
+    }
+}
+
+impl Client {
+    pub async fn handle(&self) {
+        loop {
+            match self.stream.try_write(b"PING") {
+                Err(ref e) if e.kind() == io::ErrorKind::WouldBlock => {
+                    // do nothing if we have would block
+                }
+                Err(e) => {
+                    debug!(target: "DAEMON", "Client disconnected! {e:?}");
+                    break;
+                }
+                _ => {}
+            }
+
+            let mut buf = [0; 4096];
+            match self.stream.try_read(&mut buf) {
+                Err(ref e) if e.kind() == io::ErrorKind::WouldBlock => {
+                    // do nothing if we have would block
+                }
+                Err(_) => {
+                    break;
+                }
+                Ok(_) => {
+                    info!("Message from client: {buf:?}");
+                }
+            }
+        }
+    }
+}
+
+async fn process_connection(stream: UnixStream) {
+    println!("Got a client!");
+    let client = Client::new(stream);
+    client.handle().await;
 }
 
 #[tokio::main]
@@ -84,7 +120,7 @@ async fn main() {
         match server.accept().await {
             Ok((socket, addr)) => {
                 tokio::spawn(async {
-                    process_connection(socket, addr).await;
+                    process_connection(socket).await;
                 });
             }
             Err(_) => error!("Failed to accept a connection ;("),

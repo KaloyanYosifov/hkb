@@ -4,10 +4,12 @@ use crossterm::event::{self, Event, KeyCode};
 use diesel_migrations::{embed_migrations, EmbeddedMigrations};
 use hkb_core::database::init_database;
 use hkb_core::logger::{info, init as logger_init};
+use hkb_daemon_core::client::Client;
 use ratatui::prelude::{Constraint, Direction, Layout};
 use ratatui::widgets::{Block, Borders};
 use std::{io::Error as IOError, thread, time::Duration};
 use thiserror::Error as ThisError;
+use tokio::io::{self, AsyncWriteExt};
 
 mod app_state;
 mod apps;
@@ -31,7 +33,47 @@ pub enum RendererError {
 type RenderResult = Result<(), RendererError>;
 
 async fn connect_to_server() {
+    let mut client = Client::connect().await;
+
     loop {
+        client
+            .on_read(|stream| {
+                info!(target: "Daemon Client", "Can Read! {stream:?}");
+
+                let mut buf = [0; 4096];
+                match stream.try_read(&mut buf) {
+                    Ok(0) => {
+                        // do nothing if we receive nothing
+                    },
+                    Ok(_) => {
+                        info!(target: "Daemon Client", "Received a message from daemon server! {buf:?}");
+                    },
+                    Err(ref e) if e.kind() == io::ErrorKind::WouldBlock => {
+                            // do nothing if we have would block
+                    }
+                    Err(e)  => {
+                        info!(target: "Daemon Client", "Failed to send a message to daemon server! {e:?}");
+                    }
+                }
+            })
+            .await;
+
+        client
+            .on_write(|stream| {
+                info!(target: "Daemon Client", "Can write! {stream:?}");
+                match stream.try_write(b"LOL") {
+                    Ok(_) => {
+                        info!(target: "Daemon Client", "Sent a message to daemon server!");
+                    },
+                    Err(ref e) if e.kind() == io::ErrorKind::WouldBlock => {
+                            // do nothing if we have would block
+                    }
+                    Err(e)  => {
+                        info!(target: "Daemon Client", "Failed to send a message to daemon server! {e:?}");
+                    }
+                }
+            })
+            .await;
         info!(target: "CLIENT", "here");
 
         std::thread::sleep(Duration::from_secs(5))

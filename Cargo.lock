@@ -863,6 +863,8 @@ name = "hkb_daemon_core"
 version = "0.1.0"
 dependencies = [
  "dirs",
+ "hkb_core",
+ "thiserror",
  "tokio",
 ]
 
