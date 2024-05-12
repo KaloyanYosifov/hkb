@@ -1,6 +1,17 @@
 use hkb_core::logger::info;
 use std::path::PathBuf;
+use thiserror::Error as ThisError;
 use tokio::net::UnixStream;
+
+use crate::{frame::Event, stream};
+
+#[derive(ThisError, Debug)]
+pub enum ClientError {
+    #[error("Stream error encountered!")]
+    StreamError(#[from] stream::StreamError),
+}
+
+type ClientResult<T> = Result<T, ClientError>;
 
 pub struct Client {
     sock_file: PathBuf,
@@ -26,6 +37,18 @@ impl Client {
 
         Self { sock_file, stream }
     }
+
+    pub fn from_stream(stream: UnixStream) -> Self {
+        let mut sock_file = PathBuf::new();
+
+        if let Ok(addr) = stream.peer_addr() {
+            if let Some(path) = addr.as_pathname() {
+                sock_file = path.to_path_buf();
+            }
+        }
+
+        Self { stream, sock_file }
+    }
 }
 
 impl Client {
@@ -45,6 +68,18 @@ impl Client {
         if let Ok(_) = self.stream.writable().await {
             callback(&mut self.stream);
         }
+    }
+
+    pub async fn read_event(&self) -> ClientResult<Event> {
+        let event = stream::read_event(&self.stream).await?;
+
+        Ok(event)
+    }
+
+    pub async fn send_event(&self, event: Event) -> ClientResult<()> {
+        stream::send_event(&self.stream, event).await?;
+
+        Ok(())
     }
 
     pub fn get_addr(&self) -> &PathBuf {

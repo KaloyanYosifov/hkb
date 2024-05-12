@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 
 pub type FrameSequence = Vec<Frame>;
 
-const FRAME_SIZE: usize = 16384;
+pub const FRAME_SIZE: usize = 16384;
 const FRAME_METADATA_SIZE: usize = size_of::<FrameMetadata>();
 const FRAME_DATA_SIZE: usize = FRAME_SIZE - FRAME_METADATA_SIZE;
 
@@ -14,6 +14,12 @@ pub enum Event {
     Ping,
     Pong,
     ReminderCreated(ReminderData),
+}
+
+impl Into<FrameSequence> for Event {
+    fn into(self) -> FrameSequence {
+        Frame::from_event(self)
+    }
 }
 
 pub struct FrameMetadata {
@@ -66,10 +72,6 @@ impl Frame {
         Self::from_string(serde_json::to_string(&event).unwrap())
     }
 
-    pub fn to_string(&self) -> String {
-        String::from_utf8_lossy(self.data()).into_owned()
-    }
-
     pub fn size(&self) -> u16 {
         self.metadata.size
     }
@@ -84,6 +86,18 @@ impl Frame {
 
     pub fn data(&self) -> &[u8] {
         &self.data[0..self.size() as usize]
+    }
+
+    pub fn data_to_string(&self) -> String {
+        String::from_utf8_lossy(self.data()).into_owned()
+    }
+
+    pub fn get_event(&self) -> Option<Event> {
+        serde_json::from_slice::<Event>(self.data()).ok()
+    }
+
+    pub fn convert_to_bytes(&self) -> &[u8] {
+        unsafe { std::slice::from_raw_parts((self as *const Frame) as *const u8, FRAME_SIZE) }
     }
 }
 
@@ -114,7 +128,7 @@ mod tests {
         assert_eq!(str.len() as u16, frame.size());
         assert_eq!(1, frame.frame_number());
         assert_eq!(2, frame.related_frames());
-        assert_eq!(str, &frame.to_string())
+        assert_eq!(str, &frame.data_to_string())
     }
 
     #[test]
@@ -130,7 +144,7 @@ mod tests {
         assert_eq!(str.len() as u16, frame.size());
         assert_eq!(1, frame.frame_number());
         assert_eq!(1, frame.related_frames());
-        assert_eq!(str, frame.to_string());
+        assert_eq!(str, frame.data_to_string());
     }
 
     #[test]
@@ -148,7 +162,7 @@ mod tests {
             assert_eq!(part.len() as u16, frame.size());
             assert_eq!((i + 1) as u8, frame.frame_number());
             assert_eq!(expected_total_frames, frame.related_frames());
-            assert_eq!(part, frame.to_string());
+            assert_eq!(part, frame.data_to_string());
         }
 
         // assert that we have reached the end of the string and we didn't skip anyhthing
@@ -181,7 +195,7 @@ mod tests {
     fn it_can_create_frame_sequence_from_complicated_event() {
         let event = Event::ReminderCreated(fakes::create_reminder());
 
-        let frames = Frame::from_event(event.clone());
+        let frames: FrameSequence = event.clone().into();
 
         assert_eq!(1, frames.len());
 

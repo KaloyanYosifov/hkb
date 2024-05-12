@@ -5,58 +5,46 @@ use diesel_migrations::{embed_migrations, EmbeddedMigrations};
 use hkb_core::database::init_database;
 use hkb_core::database::services::reminders::*;
 use hkb_core::logger::{self, debug, error, info, AppenderType};
+use hkb_daemon_core::client::{Client, ClientError};
 use hkb_daemon_core::server::Server;
+use hkb_daemon_core::stream::StreamError;
 use hkb_date::{date::SimpleDate, duration::HumanizedDuration};
 use notify_rust::{Notification, Timeout};
-use tokio::io;
 use tokio::net::UnixStream;
 
 pub const CORE_MIGRATIONS: EmbeddedMigrations = embed_migrations!("../hkb_core/migrations");
 
-struct Client {
-    stream: UnixStream,
-}
+async fn process_connection(stream: UnixStream) {
+    let client = Client::from_stream(stream);
 
-impl Client {
-    pub fn new(stream: UnixStream) -> Self {
-        Self { stream }
-    }
-}
+    // TODO: try sending ping every 3 seconds, to check if we are connected
 
-impl Client {
-    pub async fn handle(&self) {
-        loop {
-            match self.stream.try_write(b"PING") {
-                Err(ref e) if e.kind() == io::ErrorKind::WouldBlock => {
-                    // do nothing if we have would block
-                }
-                Err(e) => {
-                    debug!(target: "DAEMON", "Client disconnected! {e:?}");
+    loop {
+        match client.send_event(hkb_daemon_core::frame::Event::Ping).await {
+            Err(ClientError::StreamError(e)) => match e {
+                StreamError::FailedToConnect(e) => {
+                    debug!(target: "DAEMON", "Client disconnected: {e:?}");
                     break;
                 }
                 _ => {}
-            }
+            },
+            _ => {}
+        };
 
-            let mut buf = [0; 4096];
-            match self.stream.try_read(&mut buf) {
-                Err(ref e) if e.kind() == io::ErrorKind::WouldBlock => {
-                    // do nothing if we have would block
-                }
-                Err(_) => {
+        match client.read_event().await {
+            Ok(event) => {
+                debug!(target: "DAEMON", "Received an event: {event:?}");
+            }
+            Err(ClientError::StreamError(e)) => match e {
+                StreamError::FailedToConnect(e) => {
+                    debug!(target: "DAEMON", "Client disconnected: {e:?}");
                     break;
                 }
-                Ok(_) => {
-                    info!("Message from client: {buf:?}");
-                }
-            }
-        }
+                _ => {}
+            },
+            _ => {}
+        };
     }
-}
-
-async fn process_connection(stream: UnixStream) {
-    println!("Got a client!");
-    let client = Client::new(stream);
-    client.handle().await;
 }
 
 #[tokio::main]

@@ -3,13 +3,13 @@ use components::{Component, Navigation};
 use crossterm::event::{self, Event, KeyCode};
 use diesel_migrations::{embed_migrations, EmbeddedMigrations};
 use hkb_core::database::init_database;
-use hkb_core::logger::{info, init as logger_init};
-use hkb_daemon_core::client::Client;
+use hkb_core::logger::{debug, error, info, init as logger_init};
+use hkb_daemon_core::client::{Client, ClientError};
+use hkb_daemon_core::frame::Event as FrameEvent;
 use ratatui::prelude::{Constraint, Direction, Layout};
 use ratatui::widgets::{Block, Borders};
 use std::{io::Error as IOError, thread, time::Duration};
 use thiserror::Error as ThisError;
-use tokio::io;
 
 mod app_state;
 mod apps;
@@ -33,50 +33,39 @@ pub enum RendererError {
 type RenderResult = Result<(), RendererError>;
 
 async fn connect_to_server() {
-    let mut client = Client::connect().await;
+    let client = Client::connect().await;
+    let mut queued_events: Vec<FrameEvent> = Vec::with_capacity(32);
 
     loop {
-        client
-            .on_read(|stream| {
-                info!(target: "Daemon Client", "Can Read! {stream:?}");
+        for event in queued_events.iter() {
+            match client.send_event(event.clone()).await {
+                Err(ClientError::StreamError(e)) => match e {
+                    hkb_daemon_core::stream::StreamError::FailedToConnect(e) => {
+                        debug!(target: "DAEMON", "Client disconnected: {e:?}");
+                        break;
+                    }
+                    _ => {}
+                },
+                _ => {}
+            };
+        }
 
-                let mut buf = [0; 4096];
-                match stream.try_read(&mut buf) {
-                    Ok(0) => {
-                        // do nothing if we receive nothing
-                    },
-                    Ok(_) => {
-                        info!(target: "Daemon Client", "Received a message from daemon server! {buf:?}");
-                    },
-                    Err(ref e) if e.kind() == io::ErrorKind::WouldBlock => {
-                            // do nothing if we have would block
-                    }
-                    Err(e)  => {
-                        info!(target: "Daemon Client", "Failed to send a message to daemon server! {e:?}");
-                    }
+        queued_events.clear();
+
+        match client.read_event().await {
+            Ok(event) => {
+                debug!(target: "CLIENT", "Received an event: {event:?}");
+                queued_events.push(FrameEvent::Pong);
+            }
+            Err(ClientError::StreamError(e)) => match e {
+                hkb_daemon_core::stream::StreamError::FailedToConnect(e) => {
+                    debug!(target: "CLIENT", "Server disconnected: {e:?}");
+                    break;
                 }
-            })
-            .await;
-
-        client
-            .on_write(|stream| {
-                info!(target: "Daemon Client", "Can write! {stream:?}");
-                match stream.try_write(b"LOL") {
-                    Ok(_) => {
-                        info!(target: "Daemon Client", "Sent a message to daemon server!");
-                    },
-                    Err(ref e) if e.kind() == io::ErrorKind::WouldBlock => {
-                            // do nothing if we have would block
-                    }
-                    Err(e)  => {
-                        info!(target: "Daemon Client", "Failed to send a message to daemon server! {e:?}");
-                    }
-                }
-            })
-            .await;
-        info!(target: "CLIENT", "here");
-
-        std::thread::sleep(Duration::from_secs(5))
+                _ => {}
+            },
+            _ => {}
+        };
     }
 }
 
@@ -101,8 +90,6 @@ async fn main() -> RenderResult {
     .expect("Failed to initialize database!");
 
     tokio::spawn(async { connect_to_server().await });
-
-    info!(target: "CLIENT", "Oke");
 
     while !should_quit {
         while event::poll(Duration::ZERO).unwrap() {
