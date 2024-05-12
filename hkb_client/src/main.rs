@@ -34,32 +34,49 @@ type RenderResult = Result<(), RendererError>;
 
 async fn connect_to_server() {
     let mut client = Client::connect().await;
+    let mut alternate_interval = tokio::time::interval(std::time::Duration::from_millis(500));
 
     loop {
-        // TODO: fix bug where read and write might block forever to wait :(
-        match client.flush().await {
-            Err(ClientError::FailedToConnect(e)) => {
-                debug!(target: "DAEMON", "Server disconnected: {e:?}");
-                break;
+        tokio::select! {
+            _ = alternate_interval.tick() => {
+                match client.flush().await {
+                    Err(ClientError::FailedToConnect(e)) => {
+                        debug!(target: "DAEMON", "Client disconnected: {e:?}");
+                        break;
+                    }
+                    _ => {}
+                };
             }
-            _ => {}
-        };
 
-        match client.read_event().await {
-            Ok(event) => {
-                debug!(target: "CLIENT", "Received an event: {event:?}");
+            result = client.read_event() => {
+                match result {
+                    Ok(event) => {
+                        debug!(target: "CLIENT", "Received an event: {event:?}");
 
-                match event {
-                    FrameEvent::Ping => client.queue_event(FrameEvent::Pong),
+                        match event {
+                            FrameEvent::Ping => client.queue_event(FrameEvent::Pong),
+                            _ => {}
+                        }
+                            }
+                    Err(ClientError::NotReadyToSendEvent) => {
+                        // check immediately if the socket is still working
+                        // if not disconnect
+                        match client.send_event(FrameEvent::Ping).await {
+                            Err(ClientError::FailedToConnect(e)) => {
+                                debug!(target: "DAEMON", "Client disconnected: {e:?}");
+                                break;
+                            }
+                            _ => {}
+                        };
+                    },
+                    Err(ClientError::FailedToConnect(e)) => {
+                        debug!(target: "DAEMON", "Client disconnected: {e:?}");
+                        break;
+                    }
                     _ => {}
                 }
             }
-            Err(ClientError::FailedToConnect(e)) => {
-                debug!(target: "CLIENT", "Server disconnected: {e:?}");
-                break;
-            }
-            _ => {}
-        };
+        }
     }
 }
 

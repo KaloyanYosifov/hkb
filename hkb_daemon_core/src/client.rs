@@ -1,7 +1,7 @@
 use hkb_core::logger::{debug, info};
 use std::path::PathBuf;
 use thiserror::Error as ThisError;
-use tokio::net::UnixStream;
+use tokio::{io::AsyncReadExt, net::UnixStream};
 
 use crate::frame::{self, Event, FrameSequence, FRAME_SIZE};
 

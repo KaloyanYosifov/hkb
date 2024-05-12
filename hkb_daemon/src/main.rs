@@ -6,6 +6,7 @@ use hkb_core::database::init_database;
 use hkb_core::database::services::reminders::*;
 use hkb_core::logger::{self, debug, error, info, AppenderType};
 use hkb_daemon_core::client::{Client, ClientError};
+use hkb_daemon_core::frame::Event;
 use hkb_daemon_core::server::Server;
 use hkb_date::{date::SimpleDate, duration::HumanizedDuration};
 use notify_rust::{Notification, Timeout};
@@ -15,31 +16,44 @@ pub const CORE_MIGRATIONS: EmbeddedMigrations = embed_migrations!("../hkb_core/m
 
 async fn process_connection(stream: UnixStream) {
     let mut client = Client::from_stream(stream);
-
-    // TODO: try sending ping every 3 seconds, to check if we are connected
+    let mut alternate_interval = tokio::time::interval(std::time::Duration::from_millis(500));
 
     loop {
-        // TODO: fix bug where read and write might block forever to wait :(
-        client.queue_event(hkb_daemon_core::frame::Event::Ping);
+        tokio::select! {
+            _ = alternate_interval.tick() => {
+                match client.flush().await {
+                    Err(ClientError::FailedToConnect(e)) => {
+                        debug!(target: "DAEMON", "Client disconnected: {e:?}");
+                        break;
+                    }
+                    _ => {}
+                };
+            }
 
-        match client.flush().await {
-            Err(ClientError::FailedToConnect(e)) => {
-                debug!(target: "DAEMON", "Client disconnected: {e:?}");
-                break;
+            result = client.read_event() => {
+                match result {
+                    Ok(event) => {
+                        debug!(target: "DAEMON", "Received an event: {event:?}");
+                    }
+                    Err(ClientError::NotReadyToSendEvent) => {
+                        // check immediately if the socket is still working
+                        // if not disconnect
+                        match client.send_event(Event::Ping).await {
+                            Err(ClientError::FailedToConnect(e)) => {
+                                debug!(target: "DAEMON", "Client disconnected: {e:?}");
+                                break;
+                            }
+                            _ => {}
+                        };
+                    },
+                    Err(ClientError::FailedToConnect(e)) => {
+                        debug!(target: "DAEMON", "Client disconnected: {e:?}");
+                        break;
+                    }
+                    _ => {}
+                }
             }
-            _ => {}
-        };
-
-        match client.read_event().await {
-            Ok(event) => {
-                debug!(target: "DAEMON", "Received an event: {event:?}");
-            }
-            Err(ClientError::FailedToConnect(e)) => {
-                debug!(target: "DAEMON", "Client disconnected: {e:?}");
-                break;
-            }
-            _ => {}
-        };
+        }
     }
 }
 
