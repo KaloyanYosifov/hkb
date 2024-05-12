@@ -3,7 +3,7 @@ use components::{Component, Navigation};
 use crossterm::event::{self, Event, KeyCode};
 use diesel_migrations::{embed_migrations, EmbeddedMigrations};
 use hkb_core::database::init_database;
-use hkb_core::logger::{debug, error, info, init as logger_init};
+use hkb_core::logger::{debug, error, init as logger_init};
 use hkb_daemon_core::client::{Client, ClientError};
 use hkb_daemon_core::frame::Event as FrameEvent;
 use ratatui::prelude::{Constraint, Direction, Layout};
@@ -33,37 +33,31 @@ pub enum RendererError {
 type RenderResult = Result<(), RendererError>;
 
 async fn connect_to_server() {
-    let client = Client::connect().await;
-    let mut queued_events: Vec<FrameEvent> = Vec::with_capacity(32);
+    let mut client = Client::connect().await;
 
     loop {
-        for event in queued_events.iter() {
-            match client.send_event(event.clone()).await {
-                Err(ClientError::StreamError(e)) => match e {
-                    hkb_daemon_core::stream::StreamError::FailedToConnect(e) => {
-                        debug!(target: "DAEMON", "Client disconnected: {e:?}");
-                        break;
-                    }
-                    _ => {}
-                },
-                _ => {}
-            };
-        }
-
-        queued_events.clear();
+        // TODO: fix bug where read and write might block forever to wait :(
+        match client.flush().await {
+            Err(ClientError::FailedToConnect(e)) => {
+                debug!(target: "DAEMON", "Server disconnected: {e:?}");
+                break;
+            }
+            _ => {}
+        };
 
         match client.read_event().await {
             Ok(event) => {
                 debug!(target: "CLIENT", "Received an event: {event:?}");
-                queued_events.push(FrameEvent::Pong);
-            }
-            Err(ClientError::StreamError(e)) => match e {
-                hkb_daemon_core::stream::StreamError::FailedToConnect(e) => {
-                    debug!(target: "CLIENT", "Server disconnected: {e:?}");
-                    break;
+
+                match event {
+                    FrameEvent::Ping => client.queue_event(FrameEvent::Pong),
+                    _ => {}
                 }
-                _ => {}
-            },
+            }
+            Err(ClientError::FailedToConnect(e)) => {
+                debug!(target: "CLIENT", "Server disconnected: {e:?}");
+                break;
+            }
             _ => {}
         };
     }

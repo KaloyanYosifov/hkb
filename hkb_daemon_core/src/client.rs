@@ -1,14 +1,29 @@
-use hkb_core::logger::info;
+use hkb_core::logger::{debug, info};
 use std::path::PathBuf;
 use thiserror::Error as ThisError;
 use tokio::net::UnixStream;
 
-use crate::{frame::Event, stream};
+use crate::frame::{self, Event, FrameSequence, FRAME_SIZE};
 
 #[derive(ThisError, Debug)]
 pub enum ClientError {
-    #[error("Stream error encountered!")]
-    StreamError(#[from] stream::StreamError),
+    #[error("Writes are temporarily blocked.")]
+    WritesTemporaryBlocked,
+
+    #[error("Not ready to send event")]
+    NotReadyToSendEvent,
+
+    #[error("Failed to send event to the daemon server.")]
+    FailedToConnect(std::io::Error),
+
+    #[error("Reads are temporarily blocked.")]
+    ReadsTemporaryBlocked,
+
+    #[error("Not ready to receive event")]
+    NotReadyToReceiveEvent,
+
+    #[error("Receive a non event based message from socket")]
+    NotEventMessageReceived,
 }
 
 type ClientResult<T> = Result<T, ClientError>;
@@ -16,6 +31,7 @@ type ClientResult<T> = Result<T, ClientError>;
 pub struct Client {
     sock_file: PathBuf,
     stream: UnixStream,
+    event_queue: Vec<Event>,
 }
 
 impl Client {
@@ -35,11 +51,11 @@ impl Client {
 
         info!(target: "DAEMON CORE CLIENT", "Connected to {sock_file_str}");
 
-        Self { sock_file, stream }
+        Self::from_stream(stream)
     }
 
     pub fn from_stream(stream: UnixStream) -> Self {
-        let mut sock_file = PathBuf::new();
+        let mut sock_file = Self::init_socket_file();
 
         if let Ok(addr) = stream.peer_addr() {
             if let Some(path) = addr.as_pathname() {
@@ -47,11 +63,29 @@ impl Client {
             }
         }
 
-        Self { stream, sock_file }
+        Self {
+            stream,
+            sock_file,
+            event_queue: Vec::with_capacity(32),
+        }
     }
 }
 
 impl Client {
+    fn write(&self, buf: &[u8]) -> ClientResult<()> {
+        match self.stream.try_write(buf) {
+            Ok(_) => {
+                debug!(target: "DAEMON CORE CLIENT", "Sent event");
+
+                Ok(())
+            }
+            Err(ref e) if e.kind() == tokio::io::ErrorKind::WouldBlock => {
+                Err(ClientError::WritesTemporaryBlocked)
+            }
+            Err(e) => Err(ClientError::FailedToConnect(e)),
+        }
+    }
+
     pub async fn on_read<F>(&mut self, callback: F)
     where
         F: Fn(&mut UnixStream),
@@ -71,15 +105,74 @@ impl Client {
     }
 
     pub async fn read_event(&self) -> ClientResult<Event> {
-        let event = stream::read_event(&self.stream).await?;
+        if let Ok(_) = self.stream.readable().await {
+            debug!(target: "DAEMON CORE CLIENT", "Can read from socket.");
 
-        Ok(event)
+            let mut buf = [0; FRAME_SIZE];
+
+            match self.stream.try_read(&mut buf) {
+                Ok(0) => Err(ClientError::NotReadyToSendEvent),
+                Ok(_) => {
+                    let event = frame::create_frame_from_bytes(buf).get_event();
+
+                    if let Some(event) = event {
+                        Ok(event)
+                    } else {
+                        debug!(target: "DAEMON CORE CLIENT", "Received a message that is not an event: {event:?}");
+
+                        Err(ClientError::NotEventMessageReceived)
+                    }
+                }
+                Err(ref e) if e.kind() == tokio::io::ErrorKind::WouldBlock => {
+                    Err(ClientError::NotReadyToSendEvent)
+                }
+                Err(e) => Err(ClientError::FailedToConnect(e)),
+            }
+        } else {
+            Err(ClientError::NotReadyToSendEvent)
+        }
     }
 
-    pub async fn send_event(&self, event: Event) -> ClientResult<()> {
-        stream::send_event(&self.stream, event).await?;
+    pub async fn send_event(&self, event: impl AsRef<Event>) -> ClientResult<()> {
+        if let Ok(_) = self.stream.writable().await {
+            debug!(target: "DAEMON CORE CLIENT", "Can write to socket.");
 
-        Ok(())
+            let frame_sequence: FrameSequence = event.as_ref().into();
+
+            for frame in frame_sequence {
+                // TODO: When we have an error
+                // send a discard event to the daemon to discard frame sequence
+                self.write(frame.convert_to_bytes())?;
+            }
+
+            Ok(())
+        } else {
+            Err(ClientError::NotReadyToSendEvent)
+        }
+    }
+
+    pub fn queue_event(&mut self, event: Event) {
+        self.event_queue.push(event);
+    }
+
+    pub async fn flush(&mut self) -> ClientResult<()> {
+        if let Ok(_) = self.stream.writable().await {
+            for event in self.event_queue.iter() {
+                let frame_sequence: FrameSequence = event.into();
+
+                for frame in frame_sequence {
+                    // TODO: When we have an error
+                    // send a discard event to the daemon to discard frame sequence
+                    self.write(frame.convert_to_bytes())?;
+                }
+            }
+
+            self.event_queue.clear();
+
+            Ok(())
+        } else {
+            Err(ClientError::NotReadyToSendEvent)
+        }
     }
 
     pub fn get_addr(&self) -> &PathBuf {

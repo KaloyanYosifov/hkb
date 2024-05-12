@@ -16,9 +16,21 @@ pub enum Event {
     ReminderCreated(ReminderData),
 }
 
-impl Into<FrameSequence> for Event {
+impl AsRef<Event> for Event {
+    fn as_ref(&self) -> &Event {
+        &self
+    }
+}
+
+impl Into<FrameSequence> for &Event {
     fn into(self) -> FrameSequence {
         Frame::from_event(self)
+    }
+}
+
+impl Into<FrameSequence> for Event {
+    fn into(self) -> FrameSequence {
+        (&self).into()
     }
 }
 
@@ -68,8 +80,8 @@ impl Frame {
 }
 
 impl Frame {
-    pub fn from_event(event: Event) -> FrameSequence {
-        Self::from_string(serde_json::to_string(&event).unwrap())
+    pub fn from_event(event: impl AsRef<Event>) -> FrameSequence {
+        Self::from_string(serde_json::to_string(event.as_ref()).unwrap())
     }
 
     pub fn size(&self) -> u16 {

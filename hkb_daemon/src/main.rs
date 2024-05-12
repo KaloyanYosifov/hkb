@@ -7,7 +7,6 @@ use hkb_core::database::services::reminders::*;
 use hkb_core::logger::{self, debug, error, info, AppenderType};
 use hkb_daemon_core::client::{Client, ClientError};
 use hkb_daemon_core::server::Server;
-use hkb_daemon_core::stream::StreamError;
 use hkb_date::{date::SimpleDate, duration::HumanizedDuration};
 use notify_rust::{Notification, Timeout};
 use tokio::net::UnixStream;
@@ -15,19 +14,19 @@ use tokio::net::UnixStream;
 pub const CORE_MIGRATIONS: EmbeddedMigrations = embed_migrations!("../hkb_core/migrations");
 
 async fn process_connection(stream: UnixStream) {
-    let client = Client::from_stream(stream);
+    let mut client = Client::from_stream(stream);
 
     // TODO: try sending ping every 3 seconds, to check if we are connected
 
     loop {
-        match client.send_event(hkb_daemon_core::frame::Event::Ping).await {
-            Err(ClientError::StreamError(e)) => match e {
-                StreamError::FailedToConnect(e) => {
-                    debug!(target: "DAEMON", "Client disconnected: {e:?}");
-                    break;
-                }
-                _ => {}
-            },
+        // TODO: fix bug where read and write might block forever to wait :(
+        client.queue_event(hkb_daemon_core::frame::Event::Ping);
+
+        match client.flush().await {
+            Err(ClientError::FailedToConnect(e)) => {
+                debug!(target: "DAEMON", "Client disconnected: {e:?}");
+                break;
+            }
             _ => {}
         };
 
@@ -35,13 +34,10 @@ async fn process_connection(stream: UnixStream) {
             Ok(event) => {
                 debug!(target: "DAEMON", "Received an event: {event:?}");
             }
-            Err(ClientError::StreamError(e)) => match e {
-                StreamError::FailedToConnect(e) => {
-                    debug!(target: "DAEMON", "Client disconnected: {e:?}");
-                    break;
-                }
-                _ => {}
-            },
+            Err(ClientError::FailedToConnect(e)) => {
+                debug!(target: "DAEMON", "Client disconnected: {e:?}");
+                break;
+            }
             _ => {}
         };
     }
