@@ -11,8 +11,6 @@ const FRAME_DATA_SIZE: usize = FRAME_SIZE - FRAME_METADATA_SIZE;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Event {
-    Ping,
-    Pong,
     ReminderCreated(ReminderData),
 }
 
@@ -179,28 +177,6 @@ mod tests {
 
         // assert that we have reached the end of the string and we didn't skip anyhthing
         assert_eq!(str.len(), end);
-    }
-
-    #[test]
-    fn it_can_create_frame_sequence_from_event() {
-        let event = Event::Ping;
-
-        let frames = Frame::from_event(event.clone());
-
-        assert_eq!(1, frames.len());
-
-        let frame = &frames[0];
-
-        assert_eq!(
-            serde_json::to_string(&event).unwrap().len(),
-            frame.size() as usize
-        );
-        assert_eq!(1, frame.frame_number());
-        assert_eq!(1, frame.related_frames());
-
-        let parsed_event: Event = serde_json::from_slice(frame.data()).unwrap();
-
-        assert_eq!(event, parsed_event);
     }
 
     #[test]

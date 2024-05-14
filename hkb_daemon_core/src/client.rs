@@ -1,7 +1,7 @@
 use hkb_core::logger::{debug, info};
-use std::path::PathBuf;
+use std::{collections::VecDeque, path::PathBuf};
 use thiserror::Error as ThisError;
-use tokio::{io::AsyncReadExt, net::UnixStream};
+use tokio::net::UnixStream;
 
 use crate::frame::{self, Event, FrameSequence, FRAME_SIZE};
 
@@ -13,8 +13,11 @@ pub enum ClientError {
     #[error("Not ready to send event")]
     NotReadyToSendEvent,
 
-    #[error("Failed to send event to the daemon server.")]
-    FailedToConnect(std::io::Error),
+    #[error("Failed to connect to socket")]
+    FailedToConnect,
+
+    #[error("Connection has closed!")]
+    ConnectionClosed(Option<std::io::Error>),
 
     #[error("Reads are temporarily blocked.")]
     ReadsTemporaryBlocked,
@@ -31,7 +34,7 @@ type ClientResult<T> = Result<T, ClientError>;
 pub struct Client {
     sock_file: PathBuf,
     stream: UnixStream,
-    event_queue: Vec<Event>,
+    event_queue: VecDeque<Event>,
 }
 
 impl Client {
@@ -41,17 +44,19 @@ impl Client {
         data_dir.join("hkb.sock")
     }
 
-    pub async fn connect() -> Self {
+    pub async fn connect() -> ClientResult<Self> {
         let sock_file = Self::init_socket_file();
         let sock_file_str = sock_file.to_str().unwrap();
 
         info!(target: "DAEMON CORE CLIENT", "Connecting to {sock_file_str}");
 
-        let stream = UnixStream::connect(&sock_file).await.unwrap();
+        if let Ok(stream) = UnixStream::connect(&sock_file).await {
+            info!(target: "DAEMON CORE CLIENT", "Connected to {sock_file_str}");
 
-        info!(target: "DAEMON CORE CLIENT", "Connected to {sock_file_str}");
-
-        Self::from_stream(stream)
+            Ok(Self::from_stream(stream))
+        } else {
+            Err(ClientError::FailedToConnect)
+        }
     }
 
     pub fn from_stream(stream: UnixStream) -> Self {
@@ -66,7 +71,7 @@ impl Client {
         Self {
             stream,
             sock_file,
-            event_queue: Vec::with_capacity(32),
+            event_queue: VecDeque::with_capacity(32),
         }
     }
 }
@@ -82,7 +87,7 @@ impl Client {
             Err(ref e) if e.kind() == tokio::io::ErrorKind::WouldBlock => {
                 Err(ClientError::WritesTemporaryBlocked)
             }
-            Err(e) => Err(ClientError::FailedToConnect(e)),
+            Err(e) => Err(ClientError::ConnectionClosed(Some(e))),
         }
     }
 
@@ -111,7 +116,7 @@ impl Client {
             let mut buf = [0; FRAME_SIZE];
 
             match self.stream.try_read(&mut buf) {
-                Ok(0) => Err(ClientError::NotReadyToSendEvent),
+                Ok(0) => Err(ClientError::ConnectionClosed(None)),
                 Ok(_) => {
                     let event = frame::create_frame_from_bytes(buf).get_event();
 
@@ -126,7 +131,7 @@ impl Client {
                 Err(ref e) if e.kind() == tokio::io::ErrorKind::WouldBlock => {
                     Err(ClientError::NotReadyToSendEvent)
                 }
-                Err(e) => Err(ClientError::FailedToConnect(e)),
+                Err(e) => Err(ClientError::ConnectionClosed(Some(e))),
             }
         } else {
             Err(ClientError::NotReadyToSendEvent)
@@ -152,22 +157,33 @@ impl Client {
     }
 
     pub fn queue_event(&mut self, event: Event) {
-        self.event_queue.push(event);
+        self.event_queue.push_back(event);
     }
 
     pub async fn flush(&mut self) -> ClientResult<()> {
-        if let Ok(_) = self.stream.writable().await {
-            for event in self.event_queue.iter() {
-                let frame_sequence: FrameSequence = event.into();
+        if self.event_queue.is_empty() {
+            return Ok(());
+        }
 
-                for frame in frame_sequence {
-                    // TODO: When we have an error
-                    // send a discard event to the daemon to discard frame sequence
-                    self.write(frame.convert_to_bytes())?;
-                }
+        debug!(target: "DAEMON CORE CLIENT", "Flushing...");
+
+        if let Ok(_) = self.stream.writable().await {
+            debug!(target: "DAEMON CORE CLIENT", "Stream is writable.");
+
+            let event = self.event_queue.pop_front().unwrap();
+
+            let frame_sequence: FrameSequence = event.into();
+
+            debug!(target: "DAEMON CORE CLIENT", "Events left: {}", self.event_queue.len());
+            debug!(target: "DAEMON CORE CLIENT", "Frame sequence generated: {}", frame_sequence.len());
+
+            for frame in frame_sequence {
+                // TODO: When we have an error
+                // send a discard event to the daemon to discard frame sequence
+                self.write(frame.convert_to_bytes())?;
             }
 
-            self.event_queue.clear();
+            debug!(target: "DAEMON CORE CLIENT", "Sent frame sequence");
 
             Ok(())
         } else {

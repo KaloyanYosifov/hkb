@@ -6,7 +6,6 @@ use hkb_core::database::init_database;
 use hkb_core::database::services::reminders::*;
 use hkb_core::logger::{self, debug, error, info, AppenderType};
 use hkb_daemon_core::client::{Client, ClientError};
-use hkb_daemon_core::frame::Event;
 use hkb_daemon_core::server::Server;
 use hkb_date::{date::SimpleDate, duration::HumanizedDuration};
 use notify_rust::{Notification, Timeout};
@@ -22,7 +21,7 @@ async fn process_connection(stream: UnixStream) {
         tokio::select! {
             _ = alternate_interval.tick() => {
                 match client.flush().await {
-                    Err(ClientError::FailedToConnect(e)) => {
+                    Err(ClientError::ConnectionClosed(e)) => {
                         debug!(target: "DAEMON", "Client disconnected: {e:?}");
                         break;
                     }
@@ -35,18 +34,7 @@ async fn process_connection(stream: UnixStream) {
                     Ok(event) => {
                         debug!(target: "DAEMON", "Received an event: {event:?}");
                     }
-                    Err(ClientError::NotReadyToSendEvent) => {
-                        // check immediately if the socket is still working
-                        // if not disconnect
-                        match client.send_event(Event::Ping).await {
-                            Err(ClientError::FailedToConnect(e)) => {
-                                debug!(target: "DAEMON", "Client disconnected: {e:?}");
-                                break;
-                            }
-                            _ => {}
-                        };
-                    },
-                    Err(ClientError::FailedToConnect(e)) => {
+                    Err(ClientError::ConnectionClosed(e)) => {
                         debug!(target: "DAEMON", "Client disconnected: {e:?}");
                         break;
                     }
