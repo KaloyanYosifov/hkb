@@ -105,7 +105,7 @@ impl RemindersCreate {
                     return true;
                 }
                 Err(e) => {
-                    debug!(target: "REMINDERS_CREATE", "Failed to parse date. Err: {e:?}");
+                    debug!(target: "CLIENT_REMINDERS_CREATE", "Failed to parse date. Err: {e:?}");
                     self.error_message = Some("Failed to parse date!".to_owned());
                 }
             }
@@ -117,7 +117,7 @@ impl RemindersCreate {
 
 impl RemindersView for RemindersCreate {
     fn init(&mut self) {
-        info!(target: "REMINDERS_CREATE", "Create reminder view initialized.");
+        info!(target: "CLIENT_REMINDERS_CREATE", "Create reminder view initialized.");
 
         app_state::set_editing(true);
         app_state::disable_navigation_events();

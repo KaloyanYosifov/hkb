@@ -57,8 +57,8 @@ impl RemindersApp {
                     self.current_view.init();
                 }
                 Message::CreateReminder(reminder) => {
-                    info!(target: "REMINDERS", "Creating a reminder.");
-                    debug!(target: "REMINDERS", "Received a message to create a reminder with {reminder:?}");
+                    info!(target: "CLIENT_REMINDERS", "Creating a reminder.");
+                    debug!(target: "CLIENT_REMINDERS", "Received a message to create a reminder with {reminder:?}");
 
                     if let Ok(reminder) = services::reminders::create_reminder(reminder) {
                         crate::singleton::send_server_msg(FrameEvent::ReminderCreated(reminder));

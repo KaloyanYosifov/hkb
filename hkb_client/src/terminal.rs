@@ -3,7 +3,7 @@ use crossterm::{
     terminal::{self as crossterminal},
     ExecutableCommand,
 };
-use hkb_core::logger::{debug, error, info};
+use hkb_core::logger::{error, info};
 use ratatui::prelude::{CrosstermBackend, Terminal as TuiTerminal};
 use std::io::{self, stdout, Stdout};
 use std::panic;
@@ -31,7 +31,7 @@ pub fn init() -> Result<Terminal, TerminalError> {
         #[cfg(not(debug_assertions))]
         eprintln!("Something went horribly wrong. Check the logs!");
 
-        error!(target: "TERMINAL", "PANIC: {e}");
+        error!(target: "CLIENT_TERMINAL", "PANIC: {e}");
     }));
 
     stdout().execute(crossterminal::EnterAlternateScreen)?;
@@ -39,7 +39,7 @@ pub fn init() -> Result<Terminal, TerminalError> {
 
     let terminal = TuiTerminal::new(CrosstermBackend::new(stdout()))?;
 
-    info!(target: "TERMINAL", "Terminal initialized!");
+    info!(target: "CLIENT_TERMINAL", "Terminal initialized!");
 
     Ok(terminal)
 }
@@ -59,7 +59,7 @@ pub fn set_cursor_to_default() {
 pub fn close() -> Result<(), TerminalError> {
     {
         if crossterminal::disable_raw_mode().is_err() {
-            error!(target: "TERMINAL", "Failed to disable raw mode :/");
+            error!(target: "CLIENT_TERMINAL", "Failed to disable raw mode :/");
 
             return Err(TerminalError::FailedToCloseTerminal);
         }
@@ -68,13 +68,13 @@ pub fn close() -> Result<(), TerminalError> {
             .execute(crossterminal::LeaveAlternateScreen)
             .is_err()
         {
-            error!(target: "TERMINAL", "Failed to leave alternate screen :/");
+            error!(target: "CLIENT_TERMINAL", "Failed to leave alternate screen :/");
 
             return Err(TerminalError::FailedToCloseTerminal);
         }
     }
 
-    info!(target: "TERMINAL", "Terminal closed!");
+    info!(target: "CLIENT_TERMINAL", "Terminal closed!");
 
     Ok(())
 }

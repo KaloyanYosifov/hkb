@@ -48,23 +48,23 @@ pub fn init_database(url: &str, migrations: Vec<EmbeddedMigrations>) -> Result<(
         }
     }?;
 
-    debug!(target: "DATABASE", "Running migrations");
+    debug!(target: "CORE_DATABASE", "Running migrations");
     // TODO: maybe we can use iter.enumurate() for this?
     // for now we just use a variable as it is easy
     let mut i = 1;
     for migration in migrations {
-        debug!(target: "DATABASE", "Starting migration {i}.");
+        debug!(target: "CORE_DATABASE", "Starting migration {i}.");
 
         match connection.run_pending_migrations(migration) {
             Err(e) => {
-                error!(target: "DATABASE", "Failed to run migration: {e}");
+                error!(target: "CORE_DATABASE", "Failed to run migration: {e}");
 
                 return Err(DatabaseError::FailedToRunMigrations);
             }
             _ => {}
         };
 
-        debug!(target: "DATABASE", "Migration {i} finished !");
+        debug!(target: "CORE_DATABASE", "Migration {i} finished !");
 
         i += 1;
     }

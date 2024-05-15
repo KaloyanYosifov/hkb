@@ -91,19 +91,9 @@ fn spawn_server_connection_thread(rx: tokio::sync::mpsc::Receiver<FrameEvent>) {
     tokio::spawn(async move { connect_to_server(rx).await });
 }
 
-#[tokio::main]
-async fn main() -> RenderResult {
-    let mut terminal = terminal::init()?;
-    let mut should_quit = false;
-    let mut main_app = apps::MainApp::new();
-    let mut reminders_app = apps::RemindersApp::new();
-    let mut navigation =
-        Navigation::new("HKB".to_string(), vec![AppView::Main, AppView::Reminders]);
-
+fn bootstrap() {
     logger_init(None);
-    terminal.clear()?;
 
-    // TODO: do not use in memory sqlite database here
     let database_file_path = dirs::data_local_dir().unwrap().join("hkb/db");
     init_database(
         database_file_path.to_str().unwrap(),
@@ -115,6 +105,20 @@ async fn main() -> RenderResult {
 
     set_server_msg_sender(tx);
     spawn_server_connection_thread(rx);
+}
+
+#[tokio::main]
+async fn main() -> RenderResult {
+    bootstrap();
+
+    let mut terminal = terminal::init()?;
+    let mut should_quit = false;
+    let mut main_app = apps::MainApp::new();
+    let mut reminders_app = apps::RemindersApp::new();
+    let mut navigation =
+        Navigation::new("HKB".to_string(), vec![AppView::Main, AppView::Reminders]);
+
+    terminal.clear()?;
 
     while !should_quit {
         while event::poll(Duration::ZERO).unwrap() {

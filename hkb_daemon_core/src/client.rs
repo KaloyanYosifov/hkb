@@ -48,10 +48,10 @@ impl Client {
         let sock_file = Self::init_socket_file();
         let sock_file_str = sock_file.to_str().unwrap();
 
-        info!(target: "DAEMON CORE CLIENT", "Connecting to {sock_file_str}");
+        info!(target: "DAEMON_CORE_CLIENT", "Connecting to {sock_file_str}");
 
         if let Ok(stream) = UnixStream::connect(&sock_file).await {
-            info!(target: "DAEMON CORE CLIENT", "Connected to {sock_file_str}");
+            info!(target: "DAEMON_CORE_CLIENT", "Connected to {sock_file_str}");
 
             Ok(Self::from_stream(stream))
         } else {
@@ -80,7 +80,7 @@ impl Client {
     fn write(&self, buf: &[u8]) -> ClientResult<()> {
         match self.stream.try_write(buf) {
             Ok(_) => {
-                debug!(target: "DAEMON CORE CLIENT", "Sent event");
+                debug!(target: "DAEMON_CORE_CLIENT", "Sent event");
 
                 Ok(())
             }
@@ -111,7 +111,7 @@ impl Client {
 
     pub async fn read_event(&self) -> ClientResult<Event> {
         if let Ok(_) = self.stream.readable().await {
-            debug!(target: "DAEMON CORE CLIENT", "Can read from socket.");
+            debug!(target: "DAEMON_CORE_CLIENT", "Can read from socket.");
 
             let mut buf = [0; FRAME_SIZE];
 
@@ -123,7 +123,7 @@ impl Client {
                     if let Some(event) = event {
                         Ok(event)
                     } else {
-                        debug!(target: "DAEMON CORE CLIENT", "Received a message that is not an event: {event:?}");
+                        debug!(target: "DAEMON_CORE_CLIENT", "Received a message that is not an event: {event:?}");
 
                         Err(ClientError::NotEventMessageReceived)
                     }
@@ -140,7 +140,7 @@ impl Client {
 
     pub async fn send_event(&self, event: impl AsRef<Event>) -> ClientResult<()> {
         if let Ok(_) = self.stream.writable().await {
-            debug!(target: "DAEMON CORE CLIENT", "Can write to socket.");
+            debug!(target: "DAEMON_CORE_CLIENT", "Can write to socket.");
 
             let frame_sequence: FrameSequence = event.as_ref().into();
 
@@ -165,17 +165,17 @@ impl Client {
             return Ok(());
         }
 
-        debug!(target: "DAEMON CORE CLIENT", "Flushing...");
+        debug!(target: "DAEMON_CORE_CLIENT", "Flushing...");
 
         if let Ok(_) = self.stream.writable().await {
-            debug!(target: "DAEMON CORE CLIENT", "Stream is writable.");
+            debug!(target: "DAEMON_CORE_CLIENT", "Stream is writable.");
 
             let event = self.event_queue.pop_front().unwrap();
 
             let frame_sequence: FrameSequence = event.into();
 
-            debug!(target: "DAEMON CORE CLIENT", "Events left: {}", self.event_queue.len());
-            debug!(target: "DAEMON CORE CLIENT", "Frame sequence generated: {}", frame_sequence.len());
+            debug!(target: "DAEMON_CORE_CLIENT", "Events left: {}", self.event_queue.len());
+            debug!(target: "DAEMON_CORE_CLIENT", "Frame sequence generated: {}", frame_sequence.len());
 
             for frame in frame_sequence {
                 // TODO: When we have an error
@@ -183,7 +183,7 @@ impl Client {
                 self.write(frame.convert_to_bytes())?;
             }
 
-            debug!(target: "DAEMON CORE CLIENT", "Sent frame sequence");
+            debug!(target: "DAEMON_CORE_CLIENT", "Sent frame sequence");
 
             Ok(())
         } else {
