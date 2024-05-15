@@ -118,6 +118,8 @@ impl Client {
             match self.stream.try_read(&mut buf) {
                 Ok(0) => Err(ClientError::ConnectionClosed(None)),
                 Ok(_) => {
+                    // TODO: Support wating for all frames to build a frame sequence
+                    // if the event is not fitted into one frame
                     let event = frame::create_frame_from_bytes(buf).get_event();
 
                     if let Some(event) = event {
