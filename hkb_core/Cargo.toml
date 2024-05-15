@@ -7,10 +7,12 @@ edition = "2021"
 
 [dependencies]
 log = { version = "0.4.21" }
-dirs = { version = "5.0.1" }
 cfg-if = { version = "1.0.0" }
+dirs = { workspace = true }
+serde = { workspace = true }
 thiserror = { workspace = true }
 parking_lot = { workspace = true }
+serde_json = { workspace = true }
 serial_test = { version = "3.1.0" }
 diesel = { version = "2.1.6", optional = true }
 hkb_date = { path = "../hkb_date", version = "0.1.0" }

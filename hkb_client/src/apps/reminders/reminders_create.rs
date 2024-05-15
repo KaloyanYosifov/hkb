@@ -1,7 +1,7 @@
 use crossterm::event::KeyCode;
 use hkb_core::database::services::reminders::CreateReminderData;
 use hkb_core::logger::{debug, info};
-use hkb_date::date::SimpleLocalDate;
+use hkb_date::date::SimpleDate;
 use hkb_date::HumanDateParser;
 use ratatui::prelude::{Constraint, Direction, Frame, Layout, Rect};
 use ratatui::style::{Color, Style};
@@ -19,7 +19,7 @@ pub struct RemindersCreate {
     message_input: InputState,
     reminder_date_input: InputState,
     submit_button: ButtonState,
-    parsed_date: Option<SimpleLocalDate>,
+    parsed_date: Option<SimpleDate>,
 }
 
 impl Default for RemindersCreate {
@@ -95,7 +95,7 @@ impl RemindersCreate {
         } else if self.reminder_date_input.buffer.len() <= 0 {
             self.error_message = Some("Remidner Date Input is required!".to_owned());
         } else {
-            let parser = HumanDateParser::new(SimpleLocalDate::now());
+            let parser = HumanDateParser::new(SimpleDate::local());
 
             match parser.parse(&self.reminder_date_input.buffer) {
                 Ok(date) => {
@@ -105,7 +105,7 @@ impl RemindersCreate {
                     return true;
                 }
                 Err(e) => {
-                    debug!(target: "REMINDERS_CREATE", "Failed to parse date. Err: {e:?}");
+                    debug!(target: "CLIENT_REMINDERS_CREATE", "Failed to parse date. Err: {e:?}");
                     self.error_message = Some("Failed to parse date!".to_owned());
                 }
             }
@@ -117,7 +117,7 @@ impl RemindersCreate {
 
 impl RemindersView for RemindersCreate {
     fn init(&mut self) {
-        info!(target: "REMINDERS_CREATE", "Create reminder view initialized.");
+        info!(target: "CLIENT_REMINDERS_CREATE", "Create reminder view initialized.");
 
         app_state::set_editing(true);
         app_state::disable_navigation_events();
@@ -128,7 +128,7 @@ impl RemindersView for RemindersCreate {
             if self.validate() {
                 let data = CreateReminderData {
                     note: self.message_input.buffer.to_owned(),
-                    date: self.parsed_date.take().unwrap(),
+                    remind_at: self.parsed_date.take().unwrap(),
                 };
                 return Some(Message::CreateReminder(data));
             }

@@ -1,6 +1,7 @@
 use hkb_core::database::services;
 use hkb_core::database::services::reminders::CreateReminderData;
 use hkb_core::logger::{debug, info};
+use hkb_daemon_core::frame::Event as FrameEvent;
 use ratatui::prelude::{Frame, Rect};
 
 use self::reminders_create::RemindersCreate;
@@ -56,10 +57,12 @@ impl RemindersApp {
                     self.current_view.init();
                 }
                 Message::CreateReminder(reminder) => {
-                    info!(target: "REMINDERS", "Creating a reminder.");
-                    debug!(target: "REMINDERS", "Received a message to create a reminder with {reminder:?}");
+                    info!(target: "CLIENT_REMINDERS", "Creating a reminder.");
+                    debug!(target: "CLIENT_REMINDERS", "Received a message to create a reminder with {reminder:?}");
 
-                    services::reminders::create_reminder(reminder);
+                    if let Ok(reminder) = services::reminders::create_reminder(reminder) {
+                        crate::singleton::send_server_msg(FrameEvent::ReminderCreated(reminder));
+                    }
 
                     self.current_view = View::List.into();
                     self.current_view.init();

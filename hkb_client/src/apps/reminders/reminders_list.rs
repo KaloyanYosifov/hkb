@@ -21,10 +21,10 @@ impl Default for RemindersList {
 
 impl RemindersView for RemindersList {
     fn init(&mut self) {
-        info!(target: "REMINDERS_LIST", "List reminders view initialized.");
+        info!(target: "CLIENT_REMINDERS_LIST", "List reminders view initialized.");
         app_state::set_editing(false);
         app_state::enable_navigation_events();
-        self.reminders = services::reminders::fetch_reminders().unwrap_or(vec![]);
+        self.reminders = services::reminders::fetch_reminders(None).unwrap_or(vec![]);
     }
 
     fn update(&mut self) -> Option<Message> {

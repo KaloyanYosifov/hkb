@@ -16,20 +16,22 @@ use diesel::{
 )]
 pub(crate) struct Reminder {
     pub id: i64,
-    pub date: String,
     pub note: String,
+    pub remind_at: String,
+    pub created_at: String,
 }
 
 #[derive(Debug, AsChangeset)]
 #[diesel(table_name = reminders)]
 pub(crate) struct UpdateReminder {
     pub note: Option<String>,
-    pub date: Option<String>,
+    pub remind_at: Option<String>,
 }
 
 #[derive(Insertable)]
 #[diesel(table_name = reminders)]
 pub(crate) struct CreateReminder {
-    pub date: String,
     pub note: String,
+    pub remind_at: String,
+    pub created_at: String,
 }

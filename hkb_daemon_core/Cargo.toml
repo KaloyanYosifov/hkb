@@ -1,17 +1,14 @@
 [package]
-name = "hkb_date"
+name = "hkb_daemon_core"
 version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-pest = "2.7.9"
-pest_derive = "2.7.9"
+dirs = { workspace = true }
+tokio = { workspace = true }
 serde = { workspace = true }
-serde_json = { workspace = true }
-chrono = { version = "0.4.37", features = ["rkyv-64", "serde"] }
 thiserror = { workspace = true }
-
-[features]
-chrono = []
+serde_json = { workspace = true }
+hkb_core = { path = "../hkb_core", version = "0.1.0" }

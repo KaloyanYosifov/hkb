@@ -5,7 +5,7 @@ use log::{debug, error};
 use parking_lot::Mutex;
 use thiserror::Error as ThisError;
 
-pub mod models;
+pub(crate) mod models;
 mod schema;
 pub mod services;
 
@@ -40,31 +40,31 @@ pub type DatabaseResult<T> = Result<T, DatabaseError>;
 pub fn init_database(url: &str, migrations: Vec<EmbeddedMigrations>) -> Result<(), DatabaseError> {
     let mut connection = {
         cfg_if! {
-            if #[cfg(feature = "mysql-database")]  {
+            if #[cfg(feature = "mysql-database")] {
                 MysqlConnection::establish(url)
-            } else if #[cfg(feature = "sqlite-database")]  {
+            } else if #[cfg(feature = "sqlite-database")] {
                 SqliteConnection::establish(url)
             }
         }
     }?;
 
-    debug!(target: "DATABASE", "Running migrations");
+    debug!(target: "CORE_DATABASE", "Running migrations");
     // TODO: maybe we can use iter.enumurate() for this?
     // for now we just use a variable as it is easy
     let mut i = 1;
     for migration in migrations {
-        debug!(target: "DATABASE", "Starting migration {i}.");
+        debug!(target: "CORE_DATABASE", "Starting migration {i}.");
 
         match connection.run_pending_migrations(migration) {
             Err(e) => {
-                error!(target: "DATABASE", "Failed to run migration: {e}");
+                error!(target: "CORE_DATABASE", "Failed to run migration: {e}");
 
                 return Err(DatabaseError::FailedToRunMigrations);
             }
             _ => {}
         };
 
-        debug!(target: "DATABASE", "Migration {i} finished !");
+        debug!(target: "CORE_DATABASE", "Migration {i} finished !");
 
         i += 1;
     }

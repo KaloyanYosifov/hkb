@@ -3,18 +3,21 @@ use components::{Component, Navigation};
 use crossterm::event::{self, Event, KeyCode};
 use diesel_migrations::{embed_migrations, EmbeddedMigrations};
 use hkb_core::database::init_database;
-use hkb_core::logger::init as logger_init;
+use hkb_core::logger::{debug, error, init as logger_init};
+use hkb_daemon_core::client::{Client, ClientError};
+use hkb_daemon_core::frame::Event as FrameEvent;
 use ratatui::prelude::{Constraint, Direction, Layout};
 use ratatui::widgets::{Block, Borders};
+use singleton::set_server_msg_sender;
 use std::{io::Error as IOError, thread, time::Duration};
 use thiserror::Error as ThisError;
 
-mod actions;
 mod app_state;
 mod apps;
 mod components;
 mod events;
 mod focus;
+mod singleton;
 mod terminal;
 mod utils;
 
@@ -31,7 +34,83 @@ pub enum RendererError {
 
 type RenderResult = Result<(), RendererError>;
 
-fn main() -> RenderResult {
+async fn connect_to_server(mut rx: tokio::sync::mpsc::Receiver<FrameEvent>) {
+    let mut result = Client::connect().await;
+
+    while result.is_err() {
+        tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;
+
+        result = Client::connect().await;
+    }
+
+    let mut client = result.unwrap();
+    let mut alternate_interval = tokio::time::interval(std::time::Duration::from_millis(500));
+
+    loop {
+        tokio::select! {
+            _ = alternate_interval.tick() => {
+                match client.flush().await {
+                    Err(ClientError::ConnectionClosed(e)) => {
+                        debug!(target: "CLIENT", "Server disconnected: {e:?}");
+                        break;
+                    }
+                    _ => {}
+                };
+            }
+
+            result = rx.recv() => {
+                if let Some(event) = result {
+                    debug!(target: "CLIENT", "Queued event: {event:?}");
+                    client.queue_event(event);
+                }
+            }
+
+            result = client.read_event() => {
+                match result {
+                    Ok(event) => {
+                        debug!(target: "CLIENT", "Received an event: {event:?}");
+                    }
+                    Err(ClientError::ConnectionClosed(e)) => {
+                        debug!(target: "CLIENT", "Server disconnected: {e:?}");
+                        break;
+                    }
+                    _ => {}
+                }
+            }
+        }
+    }
+
+    // if we are running the client and the connection closed out of the blue
+    // while we were connected
+    // then we try to connected again until
+    drop(client);
+    spawn_server_connection_thread(rx);
+}
+
+fn spawn_server_connection_thread(rx: tokio::sync::mpsc::Receiver<FrameEvent>) {
+    tokio::spawn(async move { connect_to_server(rx).await });
+}
+
+fn bootstrap() {
+    logger_init(None);
+
+    let database_file_path = dirs::data_local_dir().unwrap().join("hkb/db");
+    init_database(
+        database_file_path.to_str().unwrap(),
+        vec![CORE_MIGRATIONS, APP_MIGRATIONS],
+    )
+    .expect("Failed to initialize database!");
+
+    let (tx, rx) = tokio::sync::mpsc::channel::<FrameEvent>(16);
+
+    set_server_msg_sender(tx);
+    spawn_server_connection_thread(rx);
+}
+
+#[tokio::main]
+async fn main() -> RenderResult {
+    bootstrap();
+
     let mut terminal = terminal::init()?;
     let mut should_quit = false;
     let mut main_app = apps::MainApp::new();
@@ -39,12 +118,7 @@ fn main() -> RenderResult {
     let mut navigation =
         Navigation::new("HKB".to_string(), vec![AppView::Main, AppView::Reminders]);
 
-    logger_init();
     terminal.clear()?;
-
-    // TODO: do not use in memory sqlite database here
-    init_database(":memory:", vec![CORE_MIGRATIONS, APP_MIGRATIONS])
-        .expect("Failed to initialize database!");
 
     while !should_quit {
         while event::poll(Duration::ZERO).unwrap() {
