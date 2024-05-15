@@ -144,11 +144,15 @@ impl Client {
 
             let frame_sequence: FrameSequence = event.as_ref().into();
 
+            debug!(target: "DAEMON_CORE_CLIENT", "Frame sequence generated: {}", frame_sequence.len());
+
             for frame in frame_sequence {
                 // TODO: When we have an error
                 // send a discard event to the daemon to discard frame sequence
                 self.write(frame.convert_to_bytes())?;
             }
+
+            debug!(target: "DAEMON_CORE_CLIENT", "Sent frame sequence");
 
             Ok(())
         } else {
@@ -167,28 +171,13 @@ impl Client {
 
         debug!(target: "DAEMON_CORE_CLIENT", "Flushing...");
 
-        if let Ok(_) = self.stream.writable().await {
-            debug!(target: "DAEMON_CORE_CLIENT", "Stream is writable.");
+        let event = self.event_queue.pop_front().unwrap();
 
-            let event = self.event_queue.pop_front().unwrap();
+        self.send_event(event).await?;
 
-            let frame_sequence: FrameSequence = event.into();
+        debug!(target: "DAEMON_CORE_CLIENT", "Events left: {}", self.event_queue.len());
 
-            debug!(target: "DAEMON_CORE_CLIENT", "Events left: {}", self.event_queue.len());
-            debug!(target: "DAEMON_CORE_CLIENT", "Frame sequence generated: {}", frame_sequence.len());
-
-            for frame in frame_sequence {
-                // TODO: When we have an error
-                // send a discard event to the daemon to discard frame sequence
-                self.write(frame.convert_to_bytes())?;
-            }
-
-            debug!(target: "DAEMON_CORE_CLIENT", "Sent frame sequence");
-
-            Ok(())
-        } else {
-            Err(ClientError::NotReadyToSendEvent)
-        }
+        Ok(())
     }
 
     pub fn get_addr(&self) -> &PathBuf {
