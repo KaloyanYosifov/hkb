@@ -50,18 +50,22 @@ async fn handle_reminders_notification() {
         (
             hkb_date::duration::Duration::Minute(0),
             hkb_date::duration::Duration::Minute(1),
+            "1 minute",
         ),
         (
             hkb_date::duration::Duration::Minute(0),
             hkb_date::duration::Duration::Minute(5),
+            "5 minutes",
         ),
         (
             hkb_date::duration::Duration::Minute(6),
             hkb_date::duration::Duration::Minute(15),
+            "15 minutes",
         ),
         (
             hkb_date::duration::Duration::Minute(16),
             hkb_date::duration::Duration::Minute(30),
+            "30 minutes",
         ),
     ];
     let mut already_reminded: HashMap<String, Vec<i64>> = HashMap::new();
@@ -69,10 +73,9 @@ async fn handle_reminders_notification() {
     loop {
         debug!(target: "DAEMON", "Checking reminders to notify!");
 
-        for (start, end) in intervals.iter() {
+        for (start, end, humanized_timeframe) in intervals.iter() {
             let start_date = SimpleDate::local().add_duration(start).unwrap();
             let end_date = SimpleDate::local().add_duration(end).unwrap();
-            let timeframe_human_string = end_date - SimpleDate::local();
             let reminded = already_reminded
                 .entry(end.to_string())
                 .or_insert_with(|| Vec::with_capacity(16));
@@ -91,13 +94,7 @@ async fn handle_reminders_notification() {
                 debug!(target: "DAEMON", "Reminder at: {} - current time: {}", reminder.remind_at.to_string(), SimpleDate::local().to_string());
 
                 Notification::new()
-                    .summary(
-                        format!(
-                            "You have a reminder in: {}",
-                            timeframe_human_string.to_human_string()
-                        )
-                        .as_str(),
-                    )
+                    .summary(format!("You have a reminder in: {}", humanized_timeframe).as_str())
                     .body(reminder.note.as_str())
                     .auto_icon()
                     .timeout(Timeout::Milliseconds(3000))
