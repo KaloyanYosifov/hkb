@@ -70,14 +70,16 @@ async fn handle_reminders_notification() {
         debug!(target: "DAEMON", "Checking reminders to notify!");
 
         for (start, end) in intervals.iter() {
+            let start_date = SimpleDate::local().add_duration(start).unwrap();
+            let end_date = SimpleDate::local().add_duration(end).unwrap();
+            let timeframe_human_string = end_date - SimpleDate::local();
             let reminded = already_reminded
                 .entry(end.to_string())
                 .or_insert_with(|| Vec::with_capacity(16));
-
             let options = vec![
                 FetchRemindersOption::RemindAtBetween {
-                    start_date: SimpleDate::local().add_duration(start).unwrap(),
-                    end_date: SimpleDate::local().add_duration(end).unwrap(),
+                    start_date,
+                    end_date,
                 },
                 FetchRemindersOption::WithoutIds { ids: &reminded },
             ];
@@ -92,7 +94,7 @@ async fn handle_reminders_notification() {
                     .summary(
                         format!(
                             "You have a reminder in: {}",
-                            (reminder.remind_at - SimpleDate::local()).to_human_string()
+                            timeframe_human_string.to_human_string()
                         )
                         .as_str(),
                     )
