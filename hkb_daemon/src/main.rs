@@ -56,11 +56,11 @@ async fn handle_reminders_notification() {
             hkb_date::duration::Duration::Minute(5),
         ),
         (
-            hkb_date::duration::Duration::Minute(10),
+            hkb_date::duration::Duration::Minute(6),
             hkb_date::duration::Duration::Minute(15),
         ),
         (
-            hkb_date::duration::Duration::Minute(15),
+            hkb_date::duration::Duration::Minute(16),
             hkb_date::duration::Duration::Minute(30),
         ),
     ];
