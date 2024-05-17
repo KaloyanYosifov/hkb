@@ -55,15 +55,34 @@ impl Duration {
     }
 }
 
-impl std::ops::Add<Duration> for NaiveDateTime {
+impl ToString for Duration {
+    fn to_string(&self) -> String {
+        match self {
+            Duration::Minute(v) => format!("Minute-{v}"),
+            Duration::Hour(v) => format!("Hour-{v}"),
+            Duration::Day(v) => format!("Day-{v}"),
+            Duration::Week(v) => format!("Week-{v}"),
+            Duration::Month(v) => format!("Month-{v}"),
+            Duration::Year(v) => format!("Year-{v}"),
+        }
+    }
+}
+
+impl AsRef<Duration> for Duration {
+    fn as_ref(&self) -> &Self {
+        self
+    }
+}
+
+impl std::ops::Add<&Duration> for NaiveDateTime {
     type Output = NaiveDateTime;
 
-    fn add(self, rhs: Duration) -> Self::Output {
+    fn add(self, rhs: &Duration) -> Self::Output {
         match rhs {
-            Duration::Minute(v) => self + (TimeDelta::minutes(v as i64)),
-            Duration::Hour(v) => self + (TimeDelta::hours(v as i64)),
-            Duration::Day(v) => self + (TimeDelta::days(v as i64)),
-            Duration::Week(v) => self + (TimeDelta::weeks(v as i64)),
+            Duration::Minute(v) => self + (TimeDelta::minutes(*v as i64)),
+            Duration::Hour(v) => self + (TimeDelta::hours(*v as i64)),
+            Duration::Day(v) => self + (TimeDelta::days(*v as i64)),
+            Duration::Week(v) => self + (TimeDelta::weeks(*v as i64)),
             Duration::Month(v) => {
                 let mut new_month = self.month() + v;
 
@@ -100,18 +119,19 @@ impl std::ops::Add<Duration> for NaiveDateTime {
     }
 }
 
-impl std::ops::Sub<Duration> for NaiveDateTime {
+impl std::ops::Sub<&Duration> for NaiveDateTime {
     type Output = NaiveDateTime;
 
-    fn sub(self, rhs: Duration) -> Self::Output {
+    fn sub(self, rhs: &Duration) -> Self::Output {
         match rhs {
-            Duration::Minute(v) => self - (TimeDelta::minutes(v as i64)),
-            Duration::Hour(v) => self - (TimeDelta::hours(v as i64)),
-            Duration::Day(v) => self - (TimeDelta::days(v as i64)),
-            Duration::Week(v) => self - (TimeDelta::weeks(v as i64)),
+            Duration::Minute(v) => self - (TimeDelta::minutes(*v as i64)),
+            Duration::Hour(v) => self - (TimeDelta::hours(*v as i64)),
+            Duration::Day(v) => self - (TimeDelta::days(*v as i64)),
+            Duration::Week(v) => self - (TimeDelta::weeks(*v as i64)),
             Duration::Month(v) => {
-                if self.month() > v {
-                    let mut month = self.month() - v;
+                let val = *v;
+                if self.month() > val {
+                    let mut month = self.month() - val;
 
                     if month == 0 {
                         month = 1;
@@ -120,7 +140,7 @@ impl std::ops::Sub<Duration> for NaiveDateTime {
                     return self.with_month(month).unwrap();
                 }
 
-                let mut new_month = MONTHS_IN_A_YEAR - (v - self.month());
+                let mut new_month = MONTHS_IN_A_YEAR - (val - self.month());
                 let mut years_to_subtract = 1;
 
                 while new_month > MONTHS_IN_A_YEAR {
@@ -140,12 +160,28 @@ impl std::ops::Sub<Duration> for NaiveDateTime {
                     .unwrap_or_else(|| new_date.with_month(1).unwrap())
             }
             Duration::Year(v) => {
-                let year = (self.year() as u32).checked_sub(v).unwrap_or(0);
+                let year = (self.year() as u32).checked_sub(*v).unwrap_or(0);
 
                 self.with_year(year as i32)
                     .unwrap_or_else(|| self.with_year(0).unwrap())
             }
         }
+    }
+}
+
+impl std::ops::Add<Duration> for NaiveDateTime {
+    type Output = NaiveDateTime;
+
+    fn add(self, rhs: Duration) -> Self::Output {
+        self + &rhs
+    }
+}
+
+impl std::ops::Sub<Duration> for NaiveDateTime {
+    type Output = NaiveDateTime;
+
+    fn sub(self, rhs: Duration) -> Self::Output {
+        self - &rhs
     }
 }
 

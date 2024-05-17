@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::time::Duration;
 
 use diesel_migrations::{embed_migrations, EmbeddedMigrations};
@@ -45,37 +45,43 @@ async fn process_connection(stream: UnixStream) {
     }
 }
 
-#[tokio::main]
-async fn main() {
-    let database_file_path = dirs::data_local_dir().unwrap().join("hkb/db");
-    init_database(database_file_path.to_str().unwrap(), vec![CORE_MIGRATIONS]).unwrap();
+async fn handle_reminders_notification() {
+    let intervals = vec![
+        (
+            hkb_date::duration::Duration::Minute(0),
+            hkb_date::duration::Duration::Minute(1),
+        ),
+        (
+            hkb_date::duration::Duration::Minute(0),
+            hkb_date::duration::Duration::Minute(5),
+        ),
+        (
+            hkb_date::duration::Duration::Minute(10),
+            hkb_date::duration::Duration::Minute(15),
+        ),
+        (
+            hkb_date::duration::Duration::Minute(15),
+            hkb_date::duration::Duration::Minute(30),
+        ),
+    ];
+    let mut already_reminded: HashMap<String, Vec<i64>> = HashMap::new();
 
-    logger::init(Some(vec![AppenderType::FILE, AppenderType::STDOUT]));
+    loop {
+        debug!(target: "DAEMON", "Checking reminders to notify!");
 
-    let server = Server::bind();
+        for (start, end) in intervals.iter() {
+            let reminded = already_reminded
+                .entry(end.to_string())
+                .or_insert_with(|| Vec::with_capacity(16));
 
-    info!("Listening: {}", server.get_addr().to_str().unwrap());
-
-    let mut already_reminded: HashSet<i64> = HashSet::new();
-    // spawn thread for reminders
-    tokio::spawn(async move {
-        loop {
-            debug!(target: "DAEMON", "Checking reminders to notify!");
-
-            let mut reminders =
-                fetch_reminders(Some(vec![FetchRemindersOption::RemindAtBetween {
-                    start_date: SimpleDate::local(),
-                    end_date: SimpleDate::local()
-                        .add_duration(hkb_date::duration::Duration::Minute(15))
-                        .unwrap(),
-                }]))
-                .unwrap_or(vec![]);
-
-            // TODO: support filtering out ids in reminders service
-            reminders = reminders
-                .into_iter()
-                .filter(|reminder| !already_reminded.contains(&reminder.id))
-                .collect();
+            let options = vec![
+                FetchRemindersOption::RemindAtBetween {
+                    start_date: SimpleDate::local().add_duration(start).unwrap(),
+                    end_date: SimpleDate::local().add_duration(end).unwrap(),
+                },
+                FetchRemindersOption::WithoutIds { ids: &reminded },
+            ];
+            let reminders: Vec<ReminderData> = fetch_reminders(Some(options)).unwrap_or(vec![]);
 
             debug!(target: "DAEMON", "Found {} reminders to notify!", reminders.len());
 
@@ -95,12 +101,27 @@ async fn main() {
                     .timeout(Timeout::Milliseconds(3000))
                     .show()
                     .unwrap();
-                already_reminded.insert(reminder.id);
-            }
 
-            std::thread::sleep(Duration::from_secs(5));
+                reminded.push(reminder.id);
+            }
         }
-    });
+
+        std::thread::sleep(Duration::from_secs(5));
+    }
+}
+
+#[tokio::main]
+async fn main() {
+    let database_file_path = dirs::data_local_dir().unwrap().join("hkb/db");
+    init_database(database_file_path.to_str().unwrap(), vec![CORE_MIGRATIONS]).unwrap();
+
+    logger::init(Some(vec![AppenderType::FILE, AppenderType::STDOUT]));
+
+    let server = Server::bind();
+
+    info!("Listening: {}", server.get_addr().to_str().unwrap());
+
+    tokio::spawn(async move { handle_reminders_notification().await });
 
     loop {
         match server.accept().await {

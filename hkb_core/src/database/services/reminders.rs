@@ -55,10 +55,13 @@ impl Into<UpdateReminder> for UpdateReminderData {
 }
 
 #[derive(Debug)]
-pub enum FetchRemindersOption {
+pub enum FetchRemindersOption<'a> {
     RemindAtBetween {
         end_date: SimpleDate,
         start_date: SimpleDate,
+    },
+    WithoutIds {
+        ids: &'a Vec<i64>,
     },
 }
 
@@ -84,6 +87,9 @@ pub fn fetch_reminders(
                             start_date.to_string().into_sql::<SqlDateType>(),
                             end_date.to_string().into_sql::<SqlDateType>(),
                         ));
+                    }
+                    FetchRemindersOption::WithoutIds { ids } => {
+                        query = query.filter(diesel::dsl::not(reminders_dsl::id.eq_any(ids)));
                     }
                 }
             }
@@ -296,6 +302,36 @@ mod tests {
 
         assert_eq!(reminders.get(2).unwrap(), fetched_reminders.get(0).unwrap());
         assert_eq!(reminders.get(3).unwrap(), fetched_reminders.get(1).unwrap());
+    }
+
+    #[test]
+    #[serial]
+    fn it_can_fetch_reminders_by_filtering_out_some_ids() {
+        truncate_table!();
+
+        let reminders = vec![
+            create_a_reminder!(),
+            create_a_reminder!(),
+            create_a_reminder!(),
+            create_a_reminder!(),
+            create_a_reminder!(),
+        ];
+        let ids_to_exclude = vec![reminders[2].id, reminders[4].id];
+        let fetched_reminders = fetch_reminders(Some(vec![FetchRemindersOption::WithoutIds {
+            ids: &ids_to_exclude,
+        }]))
+        .unwrap();
+
+        assert_eq!(
+            reminders.len() - ids_to_exclude.len(),
+            fetched_reminders.len()
+        );
+
+        for id in ids_to_exclude.iter() {
+            for reminder in fetched_reminders.iter() {
+                assert_ne!(*id, reminder.id);
+            }
+        }
     }
 
     #[test]

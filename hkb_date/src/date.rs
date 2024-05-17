@@ -71,14 +71,14 @@ impl SimpleDate {
         })
     }
 
-    pub fn add_duration(mut self, duration: Duration) -> DateResult<Self> {
-        self.date = self.date + duration;
+    pub fn add_duration(mut self, duration: impl AsRef<Duration>) -> DateResult<Self> {
+        self.date = self.date + duration.as_ref();
 
         Ok(self)
     }
 
-    pub fn sub_duration(mut self, duration: Duration) -> DateResult<Self> {
-        self.date = self.date - duration;
+    pub fn sub_duration(mut self, duration: impl AsRef<Duration>) -> DateResult<Self> {
+        self.date = self.date - duration.as_ref();
 
         Ok(self)
     }
