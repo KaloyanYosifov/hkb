@@ -55,10 +55,19 @@ impl Into<UpdateReminder> for UpdateReminderData {
 }
 
 #[derive(Debug)]
-pub enum FetchRemindersOption<'a> {
+pub enum ReminderQueryOptions<'a> {
+    RemindAtGe {
+        date: SimpleDate,
+    },
+    RemindAtLe {
+        date: SimpleDate,
+    },
     RemindAtBetween {
         end_date: SimpleDate,
         start_date: SimpleDate,
+    },
+    WithIds {
+        ids: &'a Vec<i64>,
     },
     WithoutIds {
         ids: &'a Vec<i64>,
@@ -66,7 +75,7 @@ pub enum FetchRemindersOption<'a> {
 }
 
 pub fn fetch_reminders(
-    options: Option<Vec<FetchRemindersOption>>,
+    options: Option<Vec<ReminderQueryOptions>>,
 ) -> DatabaseResult<Vec<ReminderData>> {
     database::within_database(|conn| {
         debug!(target: "CORE_REMINDERS_SERVICE", "Fetching reminders with options: {options:?}");
@@ -79,7 +88,7 @@ pub fn fetch_reminders(
         if let Some(options) = options {
             for option in options {
                 match option {
-                    FetchRemindersOption::RemindAtBetween {
+                    ReminderQueryOptions::RemindAtBetween {
                         end_date,
                         start_date,
                     } => {
@@ -88,7 +97,20 @@ pub fn fetch_reminders(
                             end_date.to_string().into_sql::<SqlDateType>(),
                         ));
                     }
-                    FetchRemindersOption::WithoutIds { ids } => {
+                    ReminderQueryOptions::RemindAtGe { date } => {
+                        query = query.filter(
+                            reminders_dsl::remind_at.ge(date.to_string().into_sql::<SqlDateType>()),
+                        );
+                    }
+                    ReminderQueryOptions::RemindAtLe { date } => {
+                        query = query.filter(
+                            reminders_dsl::remind_at.le(date.to_string().into_sql::<SqlDateType>()),
+                        );
+                    }
+                    ReminderQueryOptions::WithIds { ids } => {
+                        query = query.filter(reminders_dsl::id.eq_any(ids));
+                    }
+                    ReminderQueryOptions::WithoutIds { ids } => {
                         query = query.filter(diesel::dsl::not(reminders_dsl::id.eq_any(ids)));
                     }
                 }
@@ -152,6 +174,54 @@ pub fn update_reminder(reminder: UpdateReminderData) -> DatabaseResult<ReminderD
         debug!(target: "CORE_REMINDERS_SERVICE", "Reminder {id} updated!");
 
         Ok(updated_reminder.into())
+    })
+}
+
+pub fn delete_reminders(option: ReminderQueryOptions) -> DatabaseResult<()> {
+    database::within_database(|conn| {
+        debug!(target: "CORE_REMINDERS_SERVICE", "Deleting reminders: {option:?}");
+
+        match option {
+            ReminderQueryOptions::RemindAtBetween {
+                end_date,
+                start_date,
+            } => {
+                diesel::delete(
+                    reminders_dsl::reminders.filter(reminders_dsl::remind_at.between(
+                        start_date.to_string().into_sql::<SqlDateType>(),
+                        end_date.to_string().into_sql::<SqlDateType>(),
+                    )),
+                )
+                .execute(conn)?;
+            }
+            ReminderQueryOptions::RemindAtGe { date } => {
+                diesel::delete(reminders_dsl::reminders.filter(
+                    reminders_dsl::remind_at.ge(date.to_string().into_sql::<SqlDateType>()),
+                ))
+                .execute(conn)?;
+            }
+            ReminderQueryOptions::RemindAtLe { date } => {
+                diesel::delete(reminders_dsl::reminders.filter(
+                    reminders_dsl::remind_at.le(date.to_string().into_sql::<SqlDateType>()),
+                ))
+                .execute(conn)?;
+            }
+            ReminderQueryOptions::WithIds { ids } => {
+                diesel::delete(reminders_dsl::reminders.filter(reminders_dsl::id.eq_any(ids)))
+                    .execute(conn)?;
+            }
+            ReminderQueryOptions::WithoutIds { ids } => {
+                diesel::delete(
+                    reminders_dsl::reminders
+                        .filter(diesel::dsl::not(reminders_dsl::id.eq_any(ids))),
+                )
+                .execute(conn)?;
+            }
+        };
+
+        debug!(target: "CORE_REMINDERS_SERVICE", "Deleted Reminders.");
+
+        Ok(())
     })
 }
 
@@ -276,7 +346,7 @@ mod tests {
             create_a_reminder!(),
         ];
         let fetched_reminders =
-            fetch_reminders(Some(vec![FetchRemindersOption::RemindAtBetween {
+            fetch_reminders(Some(vec![ReminderQueryOptions::RemindAtBetween {
                 end_date,
                 start_date,
             }]))
@@ -292,7 +362,7 @@ mod tests {
         let end_date =
             SimpleDate::parse_from_str("2024-05-01 08:00:00", "%Y-%m-%d %H:%M:%S").unwrap();
         let fetched_reminders =
-            fetch_reminders(Some(vec![FetchRemindersOption::RemindAtBetween {
+            fetch_reminders(Some(vec![ReminderQueryOptions::RemindAtBetween {
                 end_date,
                 start_date,
             }]))
@@ -317,7 +387,7 @@ mod tests {
             create_a_reminder!(),
         ];
         let ids_to_exclude = vec![reminders[2].id, reminders[4].id];
-        let fetched_reminders = fetch_reminders(Some(vec![FetchRemindersOption::WithoutIds {
+        let fetched_reminders = fetch_reminders(Some(vec![ReminderQueryOptions::WithoutIds {
             ids: &ids_to_exclude,
         }]))
         .unwrap();
@@ -371,7 +441,7 @@ mod tests {
     #[serial]
     fn it_can_update_date_of_a_reminder() {
         let reminder = create_a_reminder!();
-        let mut date = SimpleDate::local()
+        let date = SimpleDate::local()
             .add_duration(Duration::Month(1))
             .unwrap();
 
@@ -398,5 +468,22 @@ mod tests {
         assert!(delete_reminder(reminder.id).is_ok());
         assert!(fetch_reminder(reminder.id).is_err());
         assert!(fetch_reminder(reminder2.id).is_ok());
+    }
+
+    #[test]
+    #[serial]
+    fn it_can_delete_multiple_reminders_at_once() {
+        let reminder = create_a_reminder!();
+        let reminder2 = create_a_reminder!();
+        let reminder3 = create_a_reminder!();
+
+        delete_reminders(ReminderQueryOptions::WithIds {
+            ids: &vec![reminder.id, reminder2.id],
+        })
+        .unwrap();
+
+        assert!(fetch_reminder(reminder.id).is_err());
+        assert!(fetch_reminder(reminder2.id).is_err());
+        assert!(fetch_reminder(reminder3.id).is_ok());
     }
 }

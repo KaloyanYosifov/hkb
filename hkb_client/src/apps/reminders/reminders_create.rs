@@ -124,7 +124,7 @@ impl RemindersView for RemindersCreate {
     }
 
     fn update(&mut self) -> Option<Message> {
-        if self.submit_button.is_clicked() {
+        if self.submit_button.is_clicked() || events::has_key_event!(KeyCode::Enter) {
             if self.validate() {
                 let data = CreateReminderData {
                     note: self.message_input.buffer.to_owned(),

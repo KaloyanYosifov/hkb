@@ -1,5 +1,4 @@
 use crossterm::event::{Event, KeyCode};
-use hkb_core::logger::debug;
 use ratatui::{
     prelude::Rect,
     widgets::{Block, Borders, Paragraph},

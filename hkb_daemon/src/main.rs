@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::time::Duration;
 
 use diesel_migrations::{embed_migrations, EmbeddedMigrations};
@@ -7,11 +7,37 @@ use hkb_core::database::services::reminders::*;
 use hkb_core::logger::{self, debug, error, info, AppenderType};
 use hkb_daemon_core::client::{Client, ClientError};
 use hkb_daemon_core::server::Server;
-use hkb_date::{date::SimpleDate, duration::HumanizedDuration};
+use hkb_date::date::SimpleDate;
 use notify_rust::{Notification, Timeout};
 use tokio::net::UnixStream;
 
-pub const CORE_MIGRATIONS: EmbeddedMigrations = embed_migrations!("../hkb_core/migrations");
+const INTERVALS: [(
+    hkb_date::duration::Duration,
+    hkb_date::duration::Duration,
+    &str,
+); 4] = [
+    (
+        hkb_date::duration::Duration::Minute(0),
+        hkb_date::duration::Duration::Minute(1),
+        "1 minute",
+    ),
+    (
+        hkb_date::duration::Duration::Minute(0),
+        hkb_date::duration::Duration::Minute(5),
+        "5 minutes",
+    ),
+    (
+        hkb_date::duration::Duration::Minute(6),
+        hkb_date::duration::Duration::Minute(15),
+        "15 minutes",
+    ),
+    (
+        hkb_date::duration::Duration::Minute(16),
+        hkb_date::duration::Duration::Minute(30),
+        "30 minutes",
+    ),
+];
+const CORE_MIGRATIONS: EmbeddedMigrations = embed_migrations!("../hkb_core/migrations");
 
 async fn process_connection(stream: UnixStream) {
     let mut client = Client::from_stream(stream);
@@ -45,67 +71,76 @@ async fn process_connection(stream: UnixStream) {
     }
 }
 
-async fn handle_reminders_notification() {
-    let intervals = vec![
-        (
-            hkb_date::duration::Duration::Minute(0),
-            hkb_date::duration::Duration::Minute(1),
-            "1 minute",
-        ),
-        (
-            hkb_date::duration::Duration::Minute(0),
-            hkb_date::duration::Duration::Minute(5),
-            "5 minutes",
-        ),
-        (
-            hkb_date::duration::Duration::Minute(6),
-            hkb_date::duration::Duration::Minute(15),
-            "15 minutes",
-        ),
-        (
-            hkb_date::duration::Duration::Minute(16),
-            hkb_date::duration::Duration::Minute(30),
-            "30 minutes",
-        ),
-    ];
+async fn handle_reminding(already_reminded: &mut HashMap<String, Vec<i64>>) {
+    debug!(target: "DAEMON", "Checking reminders to notify!");
+
+    for (start, end, humanized_timeframe) in INTERVALS.iter() {
+        let start_date = SimpleDate::local().add_duration(start).unwrap();
+        let end_date = SimpleDate::local().add_duration(end).unwrap();
+        let reminded = already_reminded
+            .entry(end.to_string())
+            .or_insert_with(|| Vec::with_capacity(16));
+        let options = vec![
+            ReminderQueryOptions::RemindAtBetween {
+                start_date,
+                end_date,
+            },
+            ReminderQueryOptions::WithoutIds { ids: &reminded },
+        ];
+        let reminders: Vec<ReminderData> = fetch_reminders(Some(options)).unwrap_or(vec![]);
+
+        debug!(target: "DAEMON", "Found {} reminders to notify!", reminders.len());
+
+        for reminder in reminders {
+            debug!(target: "DAEMON", "Reminder at: {} - current time: {}", reminder.remind_at.to_string(), SimpleDate::local().to_string());
+
+            Notification::new()
+                .summary(format!("You have a reminder in: {}", humanized_timeframe).as_str())
+                .body(reminder.note.as_str())
+                .auto_icon()
+                .timeout(Timeout::Milliseconds(3000))
+                .show()
+                .unwrap();
+
+            reminded.push(reminder.id);
+        }
+    }
+}
+
+async fn handle_cleaning_reminders() {
+    debug!(target: "DAEMON", "Checking if we should cleanup old reminders.");
+
+    let result = delete_reminders(ReminderQueryOptions::RemindAtLe {
+        date: SimpleDate::local()
+            .sub_duration(hkb_date::duration::Duration::Day(1))
+            .unwrap(),
+    });
+
+    match result {
+        Ok(_) => {
+            debug!(target: "DAEMON", "Successfully deleted old reminders!");
+        }
+        Err(e) => {
+            error!(target: "DAEMON", "Failed to cleanup old reminders! {}", e.to_string());
+        }
+    }
+}
+
+async fn handle_reminders() {
     let mut already_reminded: HashMap<String, Vec<i64>> = HashMap::new();
+    let mut cleanup_reminders_interval =
+        tokio::time::interval(tokio::time::Duration::from_secs(60 * 5));
+    let mut reminder_interval = tokio::time::interval(tokio::time::Duration::from_secs(10));
 
     loop {
-        debug!(target: "DAEMON", "Checking reminders to notify!");
-
-        for (start, end, humanized_timeframe) in intervals.iter() {
-            let start_date = SimpleDate::local().add_duration(start).unwrap();
-            let end_date = SimpleDate::local().add_duration(end).unwrap();
-            let reminded = already_reminded
-                .entry(end.to_string())
-                .or_insert_with(|| Vec::with_capacity(16));
-            let options = vec![
-                FetchRemindersOption::RemindAtBetween {
-                    start_date,
-                    end_date,
-                },
-                FetchRemindersOption::WithoutIds { ids: &reminded },
-            ];
-            let reminders: Vec<ReminderData> = fetch_reminders(Some(options)).unwrap_or(vec![]);
-
-            debug!(target: "DAEMON", "Found {} reminders to notify!", reminders.len());
-
-            for reminder in reminders {
-                debug!(target: "DAEMON", "Reminder at: {} - current time: {}", reminder.remind_at.to_string(), SimpleDate::local().to_string());
-
-                Notification::new()
-                    .summary(format!("You have a reminder in: {}", humanized_timeframe).as_str())
-                    .body(reminder.note.as_str())
-                    .auto_icon()
-                    .timeout(Timeout::Milliseconds(3000))
-                    .show()
-                    .unwrap();
-
-                reminded.push(reminder.id);
+        tokio::select! {
+            _ = reminder_interval.tick() => {
+                handle_reminding(&mut already_reminded).await;
+            }
+            _ = cleanup_reminders_interval.tick() => {
+                handle_cleaning_reminders().await;
             }
         }
-
-        std::thread::sleep(Duration::from_secs(5));
     }
 }
 
@@ -120,11 +155,11 @@ async fn main() {
 
     info!("Listening: {}", server.get_addr().to_str().unwrap());
 
-    tokio::spawn(async move { handle_reminders_notification().await });
+    tokio::spawn(async move { handle_reminders().await });
 
     loop {
         match server.accept().await {
-            Ok((socket, addr)) => {
+            Ok((socket, _)) => {
                 tokio::spawn(async {
                     process_connection(socket).await;
                 });
