@@ -187,12 +187,14 @@ impl SimpleDate {
         self.timezone
     }
 
+    #[cfg(not(feature = "chrono"))]
+    pub(crate) fn to_chrono_date(&self) -> chrono::NaiveDateTime {
+        self.date.clone()
+    }
+
     #[cfg(feature = "chrono")]
-    pub fn to_chrono_date<Tz: chrono::TimeZone>(&self) -> DateTime<Tz> {
-        match self.timezone {
-            Timezone::UTC => return self.date.and_utc().clone(),
-            Timezone::Local => return self.date.and_local_timezone(Local).unwrap().clone(),
-        }
+    pub fn to_chrono_date(&self) -> chrono::NaiveDateTime {
+        self.date.clone()
     }
 }
 
