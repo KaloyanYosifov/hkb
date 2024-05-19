@@ -8,7 +8,7 @@ SENTENCE = _{
 IN = { "in " ~ !"0" ~ number+ ~ " " ~ duration ~ "s"? }
 AT = { "at " ~ time ~ ":" ~ time ~ (" " ~ ON)? }
 ON = { "on " ~ "the "? ~ day ~ " of " ~ month }
-NEXT = { "next " ~ next_option }
+NEXT = { "next " ~ next_option ~ (" " ~ AT)? }
 
 time = { number{1,2} }
 number = { ASCII_DIGIT }
