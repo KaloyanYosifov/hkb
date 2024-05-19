@@ -2,11 +2,13 @@ SENTENCE = _{
     IN
     | AT
     | ON
+    | NEXT
 }
 
 IN = { "in " ~ !"0" ~ number+ ~ " " ~ duration ~ "s"? }
-AT = { "at " ~ time ~ (":") ~ time ~ (" " ~ ON)? }
+AT = { "at " ~ time ~ ":" ~ time ~ (" " ~ ON)? }
 ON = { "on " ~ "the "? ~ day ~ " of " ~ month }
+NEXT = { "next " ~ next_option }
 
 time = { number{1,2} }
 number = { ASCII_DIGIT }
@@ -46,4 +48,18 @@ duration = {
     | "week"
     | "month"
     | "year"
+}
+weekday = _{
+    "monday"
+    | "tuesday"
+    | "wednesday"
+    | "thursday"
+    | "friday"
+    | "saturday"
+    | "sunday"
+}
+next_option = {
+    weekday
+    | "week"
+    | "month"
 }

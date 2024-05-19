@@ -1,3 +1,4 @@
+use chrono::Datelike;
 use pest::iterators::Pair;
 use pest::Parser;
 use pest_derive::Parser;
@@ -17,6 +18,16 @@ pub enum DateParsingError {
     #[error(transparent)]
     InvalidDurationSpecified(#[from] DurationError),
 }
+
+const DAYS_OF_WEEK: [&str; 7] = [
+    "monday",
+    "tuesday",
+    "wednesday",
+    "thursday",
+    "friday",
+    "saturday",
+    "sunday",
+];
 
 const MONTHS: [&str; 12] = [
     "january",
@@ -117,6 +128,46 @@ impl HumanDateParser {
         Ok(date)
     }
 
+    fn parse_next_sentence(&self, sentence: Pair<Rule>) -> DateParsingResult {
+        let mut inner = sentence.into_inner();
+        let pair = inner.next().unwrap();
+        let option = pair.as_str();
+
+        match option {
+            day if DAYS_OF_WEEK.contains(&day) => {
+                let date = self.start_date.clone();
+                let weekday = day.parse::<chrono::Weekday>().unwrap();
+                let current_weekday = date.to_chrono_date().weekday();
+                let mut days_since_weekday = weekday.days_since(current_weekday);
+
+                // we set it for the next same weekday
+                // if the weekday we have specified is the same one as today
+                if days_since_weekday == 0 {
+                    days_since_weekday = 7;
+                }
+
+                Ok(self
+                    .start_date
+                    .clone()
+                    .add_duration(Duration::Day(days_since_weekday))
+                    .unwrap())
+            }
+            "week" => Ok(self
+                .start_date
+                .clone()
+                .add_duration(Duration::Week(1))
+                .unwrap()),
+            "month" => Ok(self
+                .start_date
+                .clone()
+                .add_duration(Duration::Month(1))
+                .unwrap()),
+            _ => Err(DateParsingError::FailedToParseInput(
+                "Invalid day option!".to_string(),
+            )),
+        }
+    }
+
     /// Parse a human date string into a date
     ///
     /// Example
@@ -140,6 +191,7 @@ impl HumanDateParser {
             Rule::IN => self.parse_in_sentence(sentence),
             Rule::AT => self.parse_at_sentence(sentence),
             Rule::ON => self.parse_on_sentence(sentence),
+            Rule::NEXT => self.parse_next_sentence(sentence),
             _ => Err(DateParsingError::UnknownRuleEncountered()),
         }
     }
@@ -183,5 +235,18 @@ mod tests {
         assert_date_parsing!("On 5th of May", "2024-05-05T08:00:00Z");
         assert_date_parsing!("On the 5th of May", "2024-05-05T08:00:00Z");
         assert_date_parsing!("On the 1st of January", "2024-01-01T08:00:00Z");
+    }
+
+    #[test]
+    fn it_can_parse_next_sentence() {
+        assert_date_parsing!("Next Monday", "2024-04-15T08:00:00Z");
+        assert_date_parsing!("Next Tuesday", "2024-04-16T08:00:00Z");
+        assert_date_parsing!("Next Wednesday", "2024-04-17T08:00:00Z");
+        assert_date_parsing!("Next Thursday", "2024-04-18T08:00:00Z");
+        assert_date_parsing!("Next Friday", "2024-04-19T08:00:00Z");
+        assert_date_parsing!("Next Saturday", "2024-04-20T08:00:00Z");
+        assert_date_parsing!("Next Sunday", "2024-04-21T08:00:00Z");
+        assert_date_parsing!("Next Week", "2024-04-21T08:00:00Z");
+        assert_date_parsing!("Next Month", "2024-05-14T08:00:00Z");
     }
 }
