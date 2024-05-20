@@ -159,6 +159,30 @@ impl SimpleDate {
         Ok(())
     }
 
+    pub fn start_of_day(mut self) -> DateResult<Self> {
+        self.set_start_of_day()?;
+
+        Ok(self)
+    }
+
+    pub fn end_of_day(mut self) -> DateResult<Self> {
+        self.set_end_of_day()?;
+
+        Ok(self)
+    }
+
+    pub fn set_start_of_day(&mut self) -> DateResult<()> {
+        self.set_hms(0, 0, 0)?;
+
+        Ok(())
+    }
+
+    pub fn set_end_of_day(&mut self) -> DateResult<()> {
+        self.set_hms(23, 59, 59)?;
+
+        Ok(())
+    }
+
     pub fn year(&self) -> i32 {
         self.date.year()
     }
@@ -287,8 +311,27 @@ mod tests {
         };
     }
 
-    // Sanity checks below (even though chrono has test cases for these below we do a sanity check)
-    // to verify we are passing correct duration
+    #[test]
+    fn it_can_be_set_to_start_of_day() {
+        let mut date =
+            SimpleDate::parse_from_str("2024-04-14 08:00:00", "%Y-%m-%d %H:%M:%S").unwrap();
+
+        assert_eq!(8, date.hour());
+        assert_eq!(0, date.minute());
+        assert_eq!(0, date.second());
+
+        date.set_start_of_day().unwrap();
+
+        assert_eq!(0, date.hour());
+        assert_eq!(0, date.minute());
+        assert_eq!(0, date.second());
+
+        date.set_end_of_day().unwrap();
+
+        assert_eq!(23, date.hour());
+        assert_eq!(59, date.minute());
+        assert_eq!(59, date.second());
+    }
 
     #[test]
     fn minute_duration_can_be_added_to_date_time() {
