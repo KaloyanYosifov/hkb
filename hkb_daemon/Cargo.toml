@@ -8,6 +8,8 @@ edition = "2021"
 [dependencies]
 dirs = { workspace = true }
 tokio = { workspace = true }
+rodio = { workspace = true }
+parking_lot = { workspace = true }
 diesel_migrations = { workspace = true }
 notify-rust = { version = "4.11.0" }
 hkb_date = { path = "../hkb_date", version = "0.1.0" }

@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::time::Duration;
 
 use diesel_migrations::{embed_migrations, EmbeddedMigrations};
 use hkb_core::database::init_database;
@@ -9,6 +8,7 @@ use hkb_daemon_core::client::{Client, ClientError};
 use hkb_daemon_core::server::Server;
 use hkb_date::date::SimpleDate;
 use notify_rust::{Notification, Timeout};
+use rodio::source::Source;
 use tokio::net::UnixStream;
 
 const INTERVALS: [(
@@ -74,6 +74,8 @@ async fn process_connection(stream: UnixStream) {
 async fn handle_reminding(already_reminded: &mut HashMap<String, Vec<i64>>) {
     debug!(target: "DAEMON", "Checking reminders to notify!");
 
+    let mut has_reminded = false;
+
     for (start, end, humanized_timeframe) in INTERVALS.iter() {
         let start_date = SimpleDate::local().add_duration(start).unwrap();
         let end_date = SimpleDate::local().add_duration(end).unwrap();
@@ -91,6 +93,10 @@ async fn handle_reminding(already_reminded: &mut HashMap<String, Vec<i64>>) {
 
         debug!(target: "DAEMON", "Found {} reminders to notify!", reminders.len());
 
+        if !has_reminded {
+            has_reminded = reminders.len() > 0;
+        }
+
         for reminder in reminders {
             debug!(target: "DAEMON", "Reminder at: {} - current time: {}", reminder.remind_at.to_string(), SimpleDate::local().to_string());
 
@@ -104,6 +110,16 @@ async fn handle_reminding(already_reminded: &mut HashMap<String, Vec<i64>>) {
 
             reminded.push(reminder.id);
         }
+    }
+
+    if has_reminded {
+        let (_stream, stream_handle) = rodio::OutputStream::try_default().unwrap();
+        let sink = rodio::Sink::try_new(&stream_handle).unwrap();
+        let file = std::io::BufReader::new(std::fs::File::open("sounds/notification.wav").unwrap());
+        let source = rodio::Decoder::new(file).unwrap();
+
+        sink.append(source);
+        sink.sleep_until_end();
     }
 }
 
