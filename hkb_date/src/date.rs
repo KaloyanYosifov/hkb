@@ -159,6 +159,18 @@ impl SimpleDate {
         Ok(())
     }
 
+    pub fn start_of_day(mut self) -> DateResult<Self> {
+        self.set_start_of_day()?;
+
+        Ok(self)
+    }
+
+    pub fn end_of_day(mut self) -> DateResult<Self> {
+        self.set_end_of_day()?;
+
+        Ok(self)
+    }
+
     pub fn set_start_of_day(&mut self) -> DateResult<()> {
         self.set_hms(0, 0, 0)?;
 
