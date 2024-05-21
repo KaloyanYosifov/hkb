@@ -9,6 +9,7 @@ edition = "2021"
 dirs = { workspace = true }
 tokio = { workspace = true }
 rodio = { workspace = true }
+thiserror = { workspace = true }
 parking_lot = { workspace = true }
 diesel_migrations = { workspace = true }
 notify-rust = { version = "4.11.0" }

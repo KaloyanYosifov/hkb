@@ -8,8 +8,9 @@ use hkb_daemon_core::client::{Client, ClientError};
 use hkb_daemon_core::server::Server;
 use hkb_date::date::SimpleDate;
 use notify_rust::{Notification, Timeout};
-use rodio::source::Source;
 use tokio::net::UnixStream;
+
+mod audio;
 
 const INTERVALS: [(
     hkb_date::duration::Duration,
@@ -113,13 +114,8 @@ async fn handle_reminding(already_reminded: &mut HashMap<String, Vec<i64>>) {
     }
 
     if has_reminded {
-        let (_stream, stream_handle) = rodio::OutputStream::try_default().unwrap();
-        let sink = rodio::Sink::try_new(&stream_handle).unwrap();
-        let file = std::io::BufReader::new(std::fs::File::open("sounds/notification.wav").unwrap());
-        let source = rodio::Decoder::new(file).unwrap();
-
-        sink.append(source);
-        sink.sleep_until_end();
+        // TOOD: play sounds from data directory
+        let _ = audio::play_audio("sounds/notification.wav".to_string()).await;
     }
 }
 
@@ -171,6 +167,7 @@ async fn main() {
 
     info!("Listening: {}", server.get_addr().to_str().unwrap());
 
+    tokio::spawn(async move { audio::init().await });
     tokio::spawn(async move { handle_reminders().await });
 
     loop {
