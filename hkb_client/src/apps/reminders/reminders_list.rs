@@ -67,6 +67,28 @@ impl RemindersList {
             )
             .block(Block::default().borders(Borders::ALL).title(title))
     }
+
+    fn update_selected_reminder(&mut self) {
+        if events::has_key_event!(KeyCode::Char(c) if c == 'j') {
+            self.selected += 1;
+        } else if events::has_key_event!(KeyCode::Char(c) if c == 'k') {
+            self.selected -= 1;
+        }
+
+        if self.selected >= self.today_reminders.len() {
+            let upcoming_selected = self.selected.get_val() - self.today_reminders.len();
+
+            if upcoming_selected < self.upcoming_reminders.len() {
+                self.today_reminders_state.select(None);
+                self.upcoming_reminders_state
+                    .select(Some(upcoming_selected));
+            }
+        } else {
+            self.upcoming_reminders_state.select(None);
+            self.today_reminders_state
+                .select(Some(self.selected.get_val()));
+        }
+    }
 }
 
 impl RemindersView for RemindersList {
@@ -88,8 +110,11 @@ impl RemindersView for RemindersList {
         self.upcoming_reminders =
             reminders::fetch_reminders(Some(rest_of_reminders_query_options)).unwrap_or(vec![]);
 
-        self.selected
-            .set_max(self.today_reminders.len() + self.upcoming_reminders.len() - 1);
+        self.selected.set_max(
+            (self.today_reminders.len() + self.upcoming_reminders.len())
+                .checked_sub(1)
+                .unwrap_or(0),
+        );
     }
 
     fn update(&mut self) -> Option<Message> {
@@ -97,36 +122,23 @@ impl RemindersView for RemindersList {
             return Some(Message::ChangeView(super::View::Create));
         }
 
-        if events::has_key_event!(KeyCode::Char(c) if c == 'j') {
-            self.selected += 1;
-
-            if self.selected >= self.today_reminders.len() {
-                let upcoming_selected = self.selected.get_val() - self.today_reminders.len();
-
-                if upcoming_selected < self.upcoming_reminders.len() {
-                    self.today_reminders_state.select(None);
-                    self.upcoming_reminders_state
-                        .select(Some(upcoming_selected));
+        if events::has_key_event!(KeyCode::Backspace)
+            || events::has_key_event!(KeyCode::Char(c) if c == 'd')
+        {
+            let reminder = {
+                if self.selected >= self.today_reminders.len() {
+                    self.upcoming_reminders
+                        .get(self.selected.get_val() - self.today_reminders.len())
+                        .unwrap()
+                } else {
+                    self.today_reminders.get(self.selected.get_val()).unwrap()
                 }
-            } else {
-                self.today_reminders_state
-                    .select(Some(self.selected.get_val()));
-            }
-        } else if events::has_key_event!(KeyCode::Char(c) if c == 'k') {
-            self.selected -= 1;
+            };
 
-            if self.selected >= self.today_reminders.len() {
-                let upcoming_selected = self.selected.get_val() - self.today_reminders.len();
-
-                self.today_reminders_state.select(None);
-                self.upcoming_reminders_state
-                    .select(Some(upcoming_selected));
-            } else {
-                self.upcoming_reminders_state.select(None);
-                self.today_reminders_state
-                    .select(Some(self.selected.get_val()));
-            }
+            return Some(Message::DeleteReminder(reminder.id));
         }
+
+        self.update_selected_reminder();
 
         None
     }
