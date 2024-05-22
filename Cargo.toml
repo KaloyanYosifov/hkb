@@ -11,8 +11,9 @@ members = [
 [workspace.dependencies]
 dirs = { version = "5.0.1" }
 thiserror = { version = "1.0.56" }
-parking_lot = { version = "0.12.1" }
 diesel_migrations = { version = "2.1.0" }
 tokio = { version = "1.37.0", features = ["full"] }
 serde = { version = "1.0.201", features = ["derive"] }
 serde_json = { version = "1.0.117" }
+rodio = { version = "0.18.0" }
+parking_lot = { version = "0.12.1", features = ["send_guard"] }
