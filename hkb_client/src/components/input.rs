@@ -83,7 +83,7 @@ impl<'a> Input<'a> {
         let visible_buffer_len = (state.last_render_width as usize) + state.visible_buffer_offset;
         let max_right_pos = self.get_max_right_cursor_pos(state);
 
-        if state.cursor_offset.lt(max_right_pos) {
+        if state.cursor_offset < max_right_pos {
             state.cursor_offset.set_max(max_right_pos);
             state.cursor_offset += 1;
         } else if visible_buffer_len < state.buffer.len() {

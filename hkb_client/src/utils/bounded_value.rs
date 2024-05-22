@@ -4,6 +4,8 @@ use std::{
 };
 
 pub type BoundValueType = usize;
+
+#[derive(Clone)]
 pub struct BoundedValue {
     val: BoundValueType,
     min_val: BoundValueType,
@@ -38,7 +40,7 @@ impl BoundedValue {
     }
 
     pub fn sub_val(&mut self, val: BoundValueType) {
-        let mut val = self.val.checked_sub(val).unwrap_or(self.max_val);
+        let mut val = self.val.checked_sub(val).unwrap_or(self.min_val);
 
         if val < self.min_val {
             val = self.min_val;
@@ -66,17 +68,17 @@ impl BoundedValue {
     pub fn get_val(&self) -> BoundValueType {
         self.val
     }
+}
 
-    pub fn lt(&self, val: BoundValueType) -> bool {
-        self.val < val
-    }
+impl Add<BoundedValue> for BoundedValue {
+    type Output = Self;
 
-    pub fn gt(&self, val: BoundValueType) -> bool {
-        self.val > val
-    }
+    fn add(self, rhs: BoundedValue) -> Self::Output {
+        let mut new_instance = self.clone();
 
-    pub fn eq(&self, val: BoundValueType) -> bool {
-        self.val == val
+        new_instance.add_val(rhs.get_val());
+
+        new_instance
     }
 }
 
@@ -84,11 +86,11 @@ impl Add<BoundValueType> for BoundedValue {
     type Output = Self;
 
     fn add(self, rhs: BoundValueType) -> Self::Output {
-        Self {
-            min_val: self.min_val,
-            max_val: self.max_val,
-            val: self.val.checked_add(rhs).unwrap_or(self.max_val),
-        }
+        let mut new_instance = self.clone();
+
+        new_instance.add_val(rhs);
+
+        new_instance
     }
 }
 
@@ -96,11 +98,11 @@ impl Add<u16> for BoundedValue {
     type Output = Self;
 
     fn add(self, rhs: u16) -> Self::Output {
-        Self {
-            min_val: self.min_val,
-            max_val: self.max_val,
-            val: self.val.checked_add(rhs as usize).unwrap_or(self.max_val),
-        }
+        let mut new_instance = self.clone();
+
+        new_instance.add_val(rhs as BoundValueType);
+
+        new_instance
     }
 }
 
@@ -110,15 +112,27 @@ impl AddAssign<BoundValueType> for BoundedValue {
     }
 }
 
+impl Sub<BoundedValue> for BoundedValue {
+    type Output = Self;
+
+    fn sub(self, rhs: BoundedValue) -> Self::Output {
+        let mut new_instance = self.clone();
+
+        new_instance.sub_val(rhs.get_val());
+
+        new_instance
+    }
+}
+
 impl Sub<BoundValueType> for BoundedValue {
     type Output = Self;
 
     fn sub(self, rhs: BoundValueType) -> Self::Output {
-        Self {
-            min_val: self.min_val,
-            max_val: self.max_val,
-            val: self.val.checked_sub(rhs).unwrap_or(self.min_val),
-        }
+        let mut new_instance = self.clone();
+
+        new_instance.sub_val(rhs);
+
+        new_instance
     }
 }
 
@@ -126,11 +140,11 @@ impl Sub<u16> for BoundedValue {
     type Output = Self;
 
     fn sub(self, rhs: u16) -> Self::Output {
-        Self {
-            min_val: self.min_val,
-            max_val: self.max_val,
-            val: self.val.checked_sub(rhs as usize).unwrap_or(self.min_val),
-        }
+        let mut new_instance = self.clone();
+
+        new_instance.sub_val(rhs as BoundValueType);
+
+        new_instance
     }
 }
 
@@ -160,6 +174,22 @@ impl PartialOrd for BoundedValue {
             if self.val > other.val {
                 std::cmp::Ordering::Greater
             } else if self.val < other.val {
+                std::cmp::Ordering::Less
+            } else {
+                std::cmp::Ordering::Equal
+            }
+        };
+
+        Some(order)
+    }
+}
+
+impl PartialOrd<BoundValueType> for BoundedValue {
+    fn partial_cmp(&self, other: &BoundValueType) -> Option<Ordering> {
+        let order = {
+            if &self.val > other {
+                std::cmp::Ordering::Greater
+            } else if &self.val < other {
                 std::cmp::Ordering::Less
             } else {
                 std::cmp::Ordering::Equal
