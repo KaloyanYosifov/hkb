@@ -115,7 +115,7 @@ async fn handle_reminding(already_reminded: &mut HashMap<String, Vec<i64>>) {
 
     if has_reminded {
         // TOOD: play sounds from data directory
-        let _ = audio::play_audio("sounds/notification.wav".to_string()).await;
+        let _ = audio::play_audio("notification.wav".to_string()).await;
     }
 }
 
