@@ -68,6 +68,10 @@ impl BoundedValue {
     pub fn get_val(&self) -> BoundValueType {
         self.val
     }
+
+    pub fn get_max_val(&self) -> BoundValueType {
+        self.max_val
+    }
 }
 
 impl Add<BoundedValue> for BoundedValue {

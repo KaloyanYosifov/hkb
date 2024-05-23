@@ -122,9 +122,13 @@ impl RemindersView for RemindersList {
             return Some(Message::ChangeView(super::View::Create));
         }
 
-        if events::has_key_event!(KeyCode::Backspace)
-            || events::has_key_event!(KeyCode::Char(c) if c == 'd')
+        if (events::has_key_event!(KeyCode::Backspace)
+            || events::has_key_event!(KeyCode::Char(c) if c == 'd'))
+            && events::is_pressed_at_least('d', 2)
+            && (self.today_reminders.len() > 0 || self.upcoming_reminders.len() > 0)
         {
+            events::reset_key_press();
+
             let reminder = {
                 if self.selected >= self.today_reminders.len() {
                     self.upcoming_reminders
