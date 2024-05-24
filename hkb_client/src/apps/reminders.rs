@@ -1,6 +1,6 @@
 use hkb_core::database::services;
 use hkb_core::database::services::reminders::CreateReminderData;
-use hkb_core::logger::{debug, info};
+use hkb_core::logger::{debug, error, info};
 use hkb_daemon_core::frame::Event as FrameEvent;
 use ratatui::prelude::{Frame, Rect};
 
@@ -32,6 +32,7 @@ impl Into<Box<dyn RemindersView>> for View {
 
 enum Message {
     ChangeView(View),
+    DeleteReminder(i64),
     CreateReminder(CreateReminderData),
 }
 
@@ -66,6 +67,19 @@ impl RemindersApp {
 
                     self.current_view = View::List.into();
                     self.current_view.init();
+                }
+                Message::DeleteReminder(reminder_id) => {
+                    info!(target: "CLIENT_REMINDERS", "Deleting a reminder.");
+                    debug!(target: "CLIENT_REMINDERS", "Received a message to delete a reminder with id {reminder_id}");
+
+                    if let Ok(_) = services::reminders::delete_reminder(reminder_id) {
+                        crate::singleton::send_server_msg(FrameEvent::ReminderDeleted(reminder_id));
+
+                        // reinitialize view, as we just deleted a reminder
+                        self.current_view.init();
+                    } else {
+                        error!(target: "CLIENT_REMINDERS", "Failed to delete a reminder with id {reminder_id}!");
+                    }
                 }
             },
             _ => {}

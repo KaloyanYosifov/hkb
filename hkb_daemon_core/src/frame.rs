@@ -11,6 +11,7 @@ const FRAME_DATA_SIZE: usize = FRAME_SIZE - FRAME_METADATA_SIZE;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Event {
+    ReminderDeleted(i64),
     ReminderCreated(ReminderData),
 }
 

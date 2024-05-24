@@ -5,22 +5,34 @@ use hkb_core::logger::info;
 use hkb_date::date::SimpleDate;
 use hkb_date::duration::HumanizedDuration;
 use ratatui::prelude::{Constraint, Direction, Frame, Layout, Rect};
-use ratatui::widgets::{Block, Borders, List};
+use ratatui::style::{Modifier, Style};
+use ratatui::widgets::{Block, Borders, List, ListState};
 
+use crate::utils::bounded_value::BoundedValue;
 use crate::{app_state, events};
 
 use super::{Message, RemindersView};
 
 pub struct RemindersList {
-    upcoming_reminders: Vec<ReminderData>,
+    selected: BoundedValue,
+
     today_reminders: Vec<ReminderData>,
+    today_reminders_state: ListState,
+
+    upcoming_reminders: Vec<ReminderData>,
+    upcoming_reminders_state: ListState,
 }
 
 impl Default for RemindersList {
     fn default() -> Self {
         Self {
-            upcoming_reminders: vec![],
+            selected: BoundedValue::new(0, 0, 0),
+
             today_reminders: vec![],
+            today_reminders_state: ListState::default().with_selected(Some(0)),
+
+            upcoming_reminders: vec![],
+            upcoming_reminders_state: ListState::default().with_selected(None),
         }
     }
 }
@@ -40,20 +52,42 @@ impl RemindersList {
         format!("{} - {}", reminder.note, duration)
     }
 
-    fn render_reminders(
-        &self,
-        frame: &mut Frame,
-        title: &str,
-        reminders: &Vec<ReminderData>,
-        area: Rect,
-    ) {
+    fn create_reminder_list<'a>(&self, reminders: &Vec<ReminderData>, title: &'a str) -> List<'a> {
         let notes = reminders
             .iter()
             .map(|reminder| self.format_reminder(reminder))
             .collect::<Vec<String>>();
-        let list = List::new(notes).block(Block::default().borders(Borders::ALL).title(title));
 
-        frame.render_widget(list, area);
+        List::new(notes)
+            .highlight_style(
+                Style::default()
+                    .bg(ratatui::style::Color::Black)
+                    .fg(ratatui::style::Color::White)
+                    .add_modifier(Modifier::ITALIC),
+            )
+            .block(Block::default().borders(Borders::ALL).title(title))
+    }
+
+    fn update_selected_reminder(&mut self) {
+        if events::has_key_event!(KeyCode::Char(c) if c == 'j') {
+            self.selected += 1;
+        } else if events::has_key_event!(KeyCode::Char(c) if c == 'k') {
+            self.selected -= 1;
+        }
+
+        if self.selected >= self.today_reminders.len() {
+            let upcoming_selected = self.selected.get_val() - self.today_reminders.len();
+
+            if upcoming_selected < self.upcoming_reminders.len() {
+                self.today_reminders_state.select(None);
+                self.upcoming_reminders_state
+                    .select(Some(upcoming_selected));
+            }
+        } else {
+            self.upcoming_reminders_state.select(None);
+            self.today_reminders_state
+                .select(Some(self.selected.get_val()));
+        }
     }
 }
 
@@ -75,12 +109,40 @@ impl RemindersView for RemindersList {
             vec![ReminderQueryOptions::RemindAtGe { date: end_date }];
         self.upcoming_reminders =
             reminders::fetch_reminders(Some(rest_of_reminders_query_options)).unwrap_or(vec![]);
+
+        self.selected.set_max(
+            (self.today_reminders.len() + self.upcoming_reminders.len())
+                .checked_sub(1)
+                .unwrap_or(0),
+        );
     }
 
     fn update(&mut self) -> Option<Message> {
         if events::has_key_event!(KeyCode::Char(c) if c == 'a' || c == 'A') {
             return Some(Message::ChangeView(super::View::Create));
         }
+
+        if (events::has_key_event!(KeyCode::Backspace)
+            || events::has_key_event!(KeyCode::Char(c) if c == 'd'))
+            && events::is_pressed_at_least('d', 2)
+            && (self.today_reminders.len() > 0 || self.upcoming_reminders.len() > 0)
+        {
+            events::reset_key_press();
+
+            let reminder = {
+                if self.selected >= self.today_reminders.len() {
+                    self.upcoming_reminders
+                        .get(self.selected.get_val() - self.today_reminders.len())
+                        .unwrap()
+                } else {
+                    self.today_reminders.get(self.selected.get_val()).unwrap()
+                }
+            };
+
+            return Some(Message::DeleteReminder(reminder.id));
+        }
+
+        self.update_selected_reminder();
 
         None
     }
@@ -101,17 +163,18 @@ impl RemindersView for RemindersList {
         )
         .split(layout[1]);
 
-        self.render_reminders(
-            frame,
-            "Today Reminders",
-            &self.today_reminders,
+        let list = self.create_reminder_list(&self.today_reminders, "Today Reminders");
+        frame.render_stateful_widget(
+            list,
             vertical_split_layout[0],
+            &mut self.today_reminders_state,
         );
-        self.render_reminders(
-            frame,
-            "Upcoming Reminders",
-            &self.upcoming_reminders,
+
+        let list = self.create_reminder_list(&self.upcoming_reminders, "Upcoming Reminders");
+        frame.render_stateful_widget(
+            list,
             vertical_split_layout[1],
+            &mut self.upcoming_reminders_state,
         );
     }
 }

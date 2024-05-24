@@ -1,5 +1,7 @@
-use crossterm::event::Event;
+use crossterm::event::{Event, KeyCode};
+use hkb_core::logger::debug;
 use parking_lot::{MappedMutexGuard, Mutex, MutexGuard};
+use std::time::Instant;
 
 macro_rules! consume_key_events {
     ($pattern:pat $(if $guard:expr)?) => {{
@@ -53,6 +55,9 @@ static GLOBAL_EVENT_HANDLER: Mutex<Option<EventHandler>> = parking_lot::const_mu
 
 pub struct EventHandler {
     events: Vec<Event>,
+    times_pressed: usize,
+    key_release_delay: Instant,
+    previous_key: Option<char>,
 }
 
 impl EventHandler {
@@ -66,6 +71,10 @@ impl EventHandler {
         Self {
             // 10 is a random initial number here. We shouldn't be getting more than 10 events in one loop
             events: Vec::with_capacity(10),
+
+            times_pressed: 0,
+            previous_key: None,
+            key_release_delay: Instant::now(),
         }
     }
 }
@@ -76,7 +85,30 @@ impl EventHandler {
     }
 
     pub fn push(&mut self, event: Event) {
+        match event {
+            Event::Key(e) => match e.code {
+                KeyCode::Char(c) => {
+                    // if 300 ms have passed, we assume we had a key release
+                    // This is a hacky way of figuring out when a key has been released
+                    if self.key_release_delay.elapsed().as_millis() >= 300 {
+                        self.times_pressed += 1;
+                    }
+
+                    if let Some(prev) = self.previous_key {
+                        if prev != c {
+                            self.times_pressed = 1;
+                        }
+                    }
+
+                    self.previous_key = Some(c);
+                }
+                _ => {}
+            },
+            _ => {}
+        };
+
         self.events.push(event);
+        self.key_release_delay = Instant::now();
     }
 
     pub fn consume_if<T: Fn(&Event) -> bool>(&mut self, callback: T) -> Vec<Event> {
@@ -90,19 +122,29 @@ impl EventHandler {
         }
 
         events_to_consume
-            .iter()
-            .map(|&i| self.consume(i))
-            .filter(|event| event.is_some())
-            .map(|event| event.unwrap())
+            .into_iter()
+            .filter_map(|i| self.consume(i))
             .collect()
     }
 
     pub fn consume(&mut self, index: usize) -> Option<Event> {
-        if self.events.get(index).is_none() {
+        if index >= self.events.len() {
             return None;
         }
 
         Some(self.events.swap_remove(index))
+    }
+
+    pub fn reset_key_press(&mut self) {
+        self.times_pressed = 0;
+    }
+
+    pub fn is_pressed_at_least(&self, c: char, times: usize) -> bool {
+        if let Some(prev) = self.previous_key {
+            prev == c && self.times_pressed >= times
+        } else {
+            false
+        }
     }
 
     pub fn clear(&mut self) {
@@ -120,6 +162,14 @@ pub fn consume_if<T: Fn(&Event) -> bool>(callback: T) -> Vec<Event> {
 
 pub fn consume(index: usize) -> Option<Event> {
     EventHandler::get_global_handler().consume(index)
+}
+
+pub fn reset_key_press() {
+    EventHandler::get_global_handler().reset_key_press()
+}
+
+pub fn is_pressed_at_least(c: char, times: usize) -> bool {
+    EventHandler::get_global_handler().is_pressed_at_least(c, times)
 }
 
 pub fn clear() {
