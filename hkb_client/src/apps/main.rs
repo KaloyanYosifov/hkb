@@ -25,7 +25,7 @@ impl MainApp {
         let area_height = area.height as u32;
 
         if self.image.width() > area_width || self.image.height() > area_height {
-            self.image = self.image.resize(
+            self.image = self.image.resize_exact(
                 area_width,
                 area_height,
                 image::imageops::FilterType::Nearest,
