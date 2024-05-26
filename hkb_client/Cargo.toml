@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+image = { version = "0.25.1" }
 crossterm = { version = "0.27.0" }
 ratatui = { version = "0.26.1" }
 dirs = { workspace = true }

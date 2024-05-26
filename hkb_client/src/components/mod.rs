@@ -1,9 +1,11 @@
 pub use button::*;
+pub use image::*;
 pub use input::*;
 pub use navigation::*;
 use ratatui::{prelude::Rect, Frame};
 
 mod button;
+mod image;
 mod input;
 mod navigation;
 

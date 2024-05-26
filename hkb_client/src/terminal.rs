@@ -56,6 +56,10 @@ pub fn set_cursor_to_default() {
         .expect("Should have been able to set cursor!");
 }
 
+pub fn size() -> (u16, u16) {
+    crossterminal::size().unwrap()
+}
+
 pub fn close() -> Result<(), TerminalError> {
     {
         if crossterminal::disable_raw_mode().is_err() {
