@@ -57,56 +57,44 @@ impl MinHeap {
         }
     }
 
+    pub fn has_element(&self) -> bool {
+        self.values.len() > 0
+    }
+
     fn heapify_bottom_up(&mut self) {
         let mut index = self.values.len() - 1;
-        let mut parent = index / 2;
 
-        while self.values[parent] > self.values[index] {
-            self.swap(index, parent);
-            index = parent;
-            parent = index / 2;
+        while index > 0 {
+            let parent = (index - 1) / 2;
+
+            if self.values[parent] > self.values[index] {
+                self.swap(index, parent);
+                index = parent;
+            } else {
+                break;
+            }
         }
     }
 
     fn heapify_top_down(&mut self) {
         let mut index = 0;
 
-        loop {
-            let current_val = self.values[index];
+        while index < self.values.len() {
             let left = (index * 2) + 1;
             let right = (index * 2) + 2;
+            let mut smallest = index;
 
-            if left < self.values.len() && right < self.values.len() {
-                let left_val = self.values[left];
-                let right_val = self.values[right];
+            if left < self.values.len() && self.values[left] < self.values[smallest] {
+                smallest = left;
+            }
 
-                if left_val < right_val && left_val < current_val {
-                    self.swap(left, index);
-                    index = left;
-                } else if right_val < left_val && right_val < current_val {
-                    self.swap(right, index);
-                    index = right;
-                } else {
-                    break;
-                }
-            } else if left < self.values.len() {
-                let left_val = self.values[left];
+            if right < self.values.len() && self.values[right] < self.values[smallest] {
+                smallest = right;
+            }
 
-                if left_val < current_val {
-                    self.swap(left, index);
-                    index = left;
-                } else {
-                    break;
-                }
-            } else if right < self.values.len() {
-                let right_val = self.values[right];
-
-                if right_val < current_val {
-                    self.swap(right, index);
-                    index = right;
-                } else {
-                    break;
-                }
+            if smallest != index {
+                self.swap(smallest, index);
+                index = smallest;
             } else {
                 break;
             }
@@ -122,7 +110,10 @@ impl MinHeap {
 
 #[cfg(test)]
 mod tests {
+    use std::borrow::Borrow;
+
     use super::MinHeap;
+    use proptest::prelude::*;
 
     // TODO: add property testing
 
@@ -149,21 +140,6 @@ mod tests {
     }
 
     #[test]
-    fn it_puts_the_min_value_at_top() {
-        let mut min_heap = MinHeap::new();
-        let mut values: [usize; 10] = core::array::from_fn(|i| i + 1);
-
-        values.reverse();
-
-        for i in values {
-            min_heap.insert(i as i64);
-            assert_eq!(i as i64, min_heap.values[0]);
-        }
-
-        assert_eq!(1, min_heap.values[0]);
-    }
-
-    #[test]
     fn it_does_not_put_new_high_value_to_the_top() {
         let mut min_heap = create_min_heap();
 
@@ -180,5 +156,45 @@ mod tests {
 
         assert_eq!(1, val.unwrap());
         assert_eq!(2, min_heap.values[0]);
+    }
+
+    proptest! {
+        #[test]
+        fn it_puts_the_min_value_at_top(ref values in prop::collection::vec(any::<i64>(), 0..=50)) {
+            let mut min_heap = MinHeap::new();
+
+            // Insert all values into the min heap
+            for &val in values {
+                min_heap.insert(val);
+            }
+
+            if let Some(&min_val) = min_heap.values.get(0) {
+                assert_eq!(min_val, *values.iter().min().unwrap());
+            } else {
+                assert!(values.is_empty());
+            }
+        }
+
+        #[test]
+        fn it_puts_the_min_value_at_the_top_after_delete(ref mut values in prop::collection::vec(any::<i64>(), 0..=50)) {
+            let mut min_heap = MinHeap::new();
+
+            // Insert all values into the min heap
+            for &val in values.iter() {
+                min_heap.insert(val);
+            }
+
+            values.sort();
+
+            let mut index = 0;
+            while min_heap.has_element() {
+                let val = min_heap.pop().unwrap();
+
+                assert_eq!(values[index], val);
+                index += 1;
+            }
+
+            assert!(matches!(min_heap.pop(), None));
+        }
     }
 }
