@@ -1,3 +1,4 @@
+pub mod algorithms;
 pub mod data_structures;
 pub mod dtos;
 pub mod logger;
