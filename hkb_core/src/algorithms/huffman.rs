@@ -1,51 +1,16 @@
-use std::collections::{HashMap, VecDeque};
+use std::collections::HashMap;
+pub use traits::*;
 
-use crate::data_structures::{MinHeap, Node, NodeRef};
+mod traits;
 
-type HuffmanNode = Node<HuffmanValue>;
+use crate::data_structures::{MinHeap, Node};
 
-trait HuffmanNodeTraverser {
-    // TODO: Maybe we return our own type for binary
-    fn to_binary_encoding(&self, c: char) -> Option<String>;
-}
-
-impl HuffmanNodeTraverser for HuffmanNode {
-    fn to_binary_encoding(&self, c: char) -> Option<String> {
-        let mut queue: VecDeque<(String, NodeRef<HuffmanValue>)> = VecDeque::with_capacity(32);
-
-        if let Some(node) = self.get_left() {
-            queue.push_front(("0".to_string(), node))
-        }
-
-        if let Some(node) = self.get_right() {
-            queue.push_front(("1".to_string(), node))
-        }
-
-        while !queue.is_empty() {
-            let (binary, node) = queue.pop_front().unwrap();
-            let borrowed = node.borrow();
-
-            if Some(c) == borrowed.val.char {
-                return Some(binary);
-            }
-
-            if let Some(node) = borrowed.get_left() {
-                queue.push_front((format!("{}0", binary), node))
-            }
-
-            if let Some(node) = borrowed.get_right() {
-                queue.push_front((format!("{}1", binary), node))
-            }
-        }
-
-        None
-    }
-}
+pub type HuffmanNode = Node<HuffmanValue>;
 
 #[derive(Eq, Ord, Clone, Copy, Debug)]
 pub struct HuffmanValue {
-    char: Option<char>,
-    occurance: u64,
+    pub char: Option<char>,
+    pub occurance: u64,
 }
 
 impl PartialEq for HuffmanValue {

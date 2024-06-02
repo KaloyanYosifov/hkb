@@ -1,0 +1,21 @@
+---
+source: hkb_core/src/algorithms/huffman/traits.rs
+expression: output
+---
+Character   = 1110 
+Character H = 01010 
+Character a = 01011 
+Character c = 1011 
+Character e = 110 
+Character f = 00011 
+Character g = 00010 
+Character h = 0000 
+Character i = 1010 
+Character k = 01111 
+Character l = 11111 
+Character m = 0100 
+Character n = 11110 
+Character o = 0110 
+Character r = 001 
+Character t = 100 
+Character u = 01110
