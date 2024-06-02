@@ -2,39 +2,41 @@ use std::collections::VecDeque;
 
 use crate::data_structures::NodeRef;
 
-use super::{HuffmanNode, HuffmanValue};
+use super::{HuffmanBinaryValue, HuffmanNode, HuffmanValue};
 
 type HuffmanNodeRef = NodeRef<HuffmanValue>;
 
-fn traverse_node<T, F: Fn(&String, &HuffmanNode) -> Option<T>>(
+fn traverse_node<T, F: Fn(HuffmanBinaryValue, &HuffmanNode) -> Option<T>>(
     node: &HuffmanNode,
     callback: F,
 ) -> Option<T> {
-    let mut queue: VecDeque<(String, HuffmanNodeRef)> = VecDeque::with_capacity(32);
+    let mut queue: VecDeque<(HuffmanBinaryValue, HuffmanNodeRef)> = VecDeque::with_capacity(32);
 
     if let Some(node) = node.get_left() {
-        queue.push_front(("0".to_string(), node))
+        queue.push_front((HuffmanBinaryValue::new(0, 1), node));
     }
 
     if let Some(node) = node.get_right() {
-        queue.push_front(("1".to_string(), node))
+        queue.push_front((HuffmanBinaryValue::new(1, 1), node));
     }
 
     while !queue.is_empty() {
         let (binary, node) = queue.pop_front().unwrap();
         let borrowed = node.borrow();
-        let return_val = callback(&binary, &borrowed);
+        let return_val = callback(binary, &borrowed);
 
         if return_val.is_some() {
             return return_val;
         }
 
         if let Some(node) = borrowed.get_left() {
-            queue.push_front((format!("{}0", binary), node))
+            let new_value = (binary << 1).with_max_bits(binary.max_bits + 1);
+            queue.push_front((new_value, node));
         }
 
         if let Some(node) = borrowed.get_right() {
-            queue.push_front((format!("{}1", binary), node))
+            let new_value = ((binary << 1) + 1).with_max_bits(binary.max_bits + 1);
+            queue.push_front((new_value, node));
         }
     }
 
@@ -42,26 +44,26 @@ fn traverse_node<T, F: Fn(&String, &HuffmanNode) -> Option<T>>(
 }
 
 pub trait HuffmanNodeTraverser {
-    fn to_binary(&self, c: char) -> Option<String>;
-    fn from_binary(&self, binary_encoded: String) -> Option<char>;
+    fn to_binary(&self, c: char) -> Option<HuffmanBinaryValue>;
+    fn from_binary(&self, binary_encoded: HuffmanBinaryValue) -> Option<char>;
 }
 
 // TODO: Find out if the solutions below are ok for us
 // or if we should find a better faster solution
 impl HuffmanNodeTraverser for HuffmanNode {
-    fn to_binary(&self, c: char) -> Option<String> {
+    fn to_binary(&self, c: char) -> Option<HuffmanBinaryValue> {
         traverse_node(self, |binary, node| {
             if Some(c) == node.val.char {
-                return Some(binary.clone());
+                return Some(binary);
             } else {
                 None
             }
         })
     }
 
-    fn from_binary(&self, binary_encoded: String) -> Option<char> {
+    fn from_binary(&self, binary_encoded: HuffmanBinaryValue) -> Option<char> {
         traverse_node(self, move |binary, node| {
-            if binary_encoded.as_str() == binary.as_str() && node.val.char.is_some() {
+            if binary_encoded == binary && node.val.char.is_some() {
                 return node.val.char;
             } else {
                 None
@@ -72,11 +74,12 @@ impl HuffmanNodeTraverser for HuffmanNode {
 
 #[cfg(test)]
 mod tests {
-    use std::{collections::HashSet, hash};
+    use std::collections::HashSet;
 
+    use crate::algorithms::HuffmanEncoder;
+
+    use super::*;
     use insta::assert_snapshot;
-
-    use crate::algorithms::{HuffmanEncoder, HuffmanNode, HuffmanNodeTraverser, HuffmanValue};
 
     #[test]
     fn it_can_convert_char_to_binary() {
@@ -95,8 +98,8 @@ mod tests {
             }),
         );
 
-        assert_eq!("0", node.to_binary('a').unwrap().as_str());
-        assert_eq!("1", node.to_binary('b').unwrap().as_str());
+        assert_eq!(0, node.to_binary('a').unwrap());
+        assert_eq!(1, node.to_binary('b').unwrap());
         assert!(matches!(node.to_binary('c'), None));
     }
 
@@ -117,9 +120,20 @@ mod tests {
             }),
         );
 
-        assert_eq!('a', node.from_binary("0".to_string()).unwrap());
-        assert_eq!('b', node.from_binary("1".to_string()).unwrap());
-        assert!(matches!(node.from_binary("01".to_string()), None));
+        assert_eq!(
+            'a',
+            node.from_binary(HuffmanBinaryValue::from_string("0"))
+                .unwrap()
+        );
+        assert_eq!(
+            'b',
+            node.from_binary(HuffmanBinaryValue::from_string("1"))
+                .unwrap()
+        );
+        assert!(matches!(
+            node.from_binary(HuffmanBinaryValue::from_string("01")),
+            None
+        ));
     }
 
     #[test]
@@ -136,8 +150,14 @@ mod tests {
         chars.sort();
 
         for c in chars {
-            output
-                .push_str(format!("Character {} = {} \n", c, node.to_binary(c).unwrap()).as_str());
+            output.push_str(
+                format!(
+                    "Character {} = {} \n",
+                    c,
+                    node.to_binary(c).unwrap().to_string_packed()
+                )
+                .as_str(),
+            );
         }
 
         assert_snapshot!(output);
@@ -148,28 +168,29 @@ mod tests {
         let text = "Hello there magnificent mothertrucker";
         let node = HuffmanEncoder::compress(text);
 
-        let expected: Vec<(char, &str)> = vec![
-            ('H', "01010"),
-            ('c', "1011"),
-            ('k', "01111"),
-            ('n', "11110"),
-            ('t', "100"),
-            ('l', "11111"),
-            ('o', "0110"),
-            (' ', "1110"),
-            ('r', "001"),
-            ('e', "110"),
-            ('i', "1010"),
-            ('m', "0100"),
-            ('u', "01110"),
-            ('a', "01011"),
-            ('f', "00011"),
-            ('g', "00010"),
-            ('h', "0000"),
+        let expected: Vec<(char, HuffmanBinaryValue)> = vec![
+            ('H', HuffmanBinaryValue::from_string("01010")),
+            ('c', HuffmanBinaryValue::from_string("1011")),
+            ('k', HuffmanBinaryValue::from_string("01111")),
+            ('n', HuffmanBinaryValue::from_string("11110")),
+            ('t', HuffmanBinaryValue::from_string("100")),
+            ('l', HuffmanBinaryValue::from_string("11111")),
+            ('o', HuffmanBinaryValue::from_string("0110")),
+            (' ', HuffmanBinaryValue::from_string("1110")),
+            ('r', HuffmanBinaryValue::from_string("001")),
+            ('e', HuffmanBinaryValue::from_string("110")),
+            ('i', HuffmanBinaryValue::from_string("1010")),
+            ('m', HuffmanBinaryValue::from_string("0100")),
+            ('u', HuffmanBinaryValue::from_string("01110")),
+            ('a', HuffmanBinaryValue::from_string("01011")),
+            ('f', HuffmanBinaryValue::from_string("00011")),
+            ('g', HuffmanBinaryValue::from_string("00010")),
+            ('h', HuffmanBinaryValue::from_string("0000")),
         ];
 
         for (expected_char, binary_encoded) in expected.into_iter() {
-            let char = node.from_binary(binary_encoded.to_string()).unwrap();
+            println!("{} - {}", expected_char, binary_encoded.val);
+            let char = node.from_binary(binary_encoded).unwrap();
 
             assert_eq!(expected_char, char);
         }

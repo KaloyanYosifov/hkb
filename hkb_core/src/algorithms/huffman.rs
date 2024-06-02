@@ -1,39 +1,13 @@
 use std::collections::HashMap;
+pub use structs::*;
 pub use traits::*;
 
+mod structs;
 mod traits;
 
 use crate::data_structures::{MinHeap, Node};
 
 pub type HuffmanNode = Node<HuffmanValue>;
-
-#[derive(Eq, Ord, Clone, Copy, Debug)]
-pub struct HuffmanValue {
-    pub char: Option<char>,
-    pub occurance: u64,
-}
-
-impl PartialEq for HuffmanValue {
-    fn eq(&self, other: &Self) -> bool {
-        self.char == other.char
-    }
-}
-
-impl PartialOrd for HuffmanValue {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        let val = {
-            if self.occurance > other.occurance {
-                std::cmp::Ordering::Greater
-            } else if self.occurance < other.occurance {
-                std::cmp::Ordering::Less
-            } else {
-                std::cmp::Ordering::Equal
-            }
-        };
-
-        Some(val)
-    }
-}
 
 pub struct HuffmanEncoder;
 
