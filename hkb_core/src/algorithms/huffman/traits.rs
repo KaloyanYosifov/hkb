@@ -139,7 +139,7 @@ mod tests {
     #[test]
     fn it_can_convert_char_to_binary_snap() {
         let text = "Hello there magnificent mothertrucker";
-        let node = HuffmanEncoder::compress(text);
+        let (_, node) = HuffmanEncoder::compress(text);
         let mut output = String::with_capacity(1024);
         let mut chars = text
             .chars()
@@ -166,7 +166,7 @@ mod tests {
     #[test]
     fn it_can_convert_binary_to_char() {
         let text = "Hello there magnificent mothertrucker";
-        let node = HuffmanEncoder::compress(text);
+        let (_, node) = HuffmanEncoder::compress(text);
 
         let expected: Vec<(char, HuffmanBinaryValue)> = vec![
             ('H', HuffmanBinaryValue::from_string("01010")),

@@ -12,7 +12,7 @@ pub type HuffmanNode = Node<HuffmanValue>;
 pub struct HuffmanEncoder;
 
 impl HuffmanEncoder {
-    pub fn compress(text: &str) -> HuffmanNode {
+    pub fn compress(text: &str) -> (HuffmanBinary, HuffmanNode) {
         let mut huffman_values: Vec<HuffmanValue> = Vec::with_capacity(text.len() / 2);
         let mut occurance_map: HashMap<char, usize> = HashMap::with_capacity(text.len() / 2);
 
@@ -57,7 +57,16 @@ impl HuffmanEncoder {
             priority_queue.insert(node);
         }
 
-        priority_queue.pop().unwrap()
+        let root = priority_queue.pop().unwrap();
+
+        let mut binary = Vec::with_capacity(text.len());
+        for char in text.chars().into_iter() {
+            binary.push(root.to_binary(char).unwrap());
+        }
+
+        let binary = HuffmanBinary { binary };
+
+        (binary, root)
     }
 }
 

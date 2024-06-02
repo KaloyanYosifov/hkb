@@ -124,6 +124,7 @@ impl std::ops::Shl<u32> for HuffmanBinaryValue {
     }
 }
 
+#[derive(Debug)]
 pub struct HuffmanBinary {
     pub(crate) binary: Vec<HuffmanBinaryValue>,
 }

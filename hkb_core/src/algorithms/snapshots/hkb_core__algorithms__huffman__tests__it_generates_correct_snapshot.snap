@@ -2,397 +2,551 @@
 source: hkb_core/src/algorithms/huffman.rs
 expression: "HuffmanEncoder::compress(text)"
 ---
-Node {
-    val: HuffmanValue {
-        char: None,
-        occurance: 37,
+(
+    HuffmanBinary {
+        binary: [
+            HuffmanBinaryValue {
+                val: 10,
+                max_bits: 5,
+            },
+            HuffmanBinaryValue {
+                val: 6,
+                max_bits: 3,
+            },
+            HuffmanBinaryValue {
+                val: 31,
+                max_bits: 5,
+            },
+            HuffmanBinaryValue {
+                val: 31,
+                max_bits: 5,
+            },
+            HuffmanBinaryValue {
+                val: 6,
+                max_bits: 4,
+            },
+            HuffmanBinaryValue {
+                val: 14,
+                max_bits: 4,
+            },
+            HuffmanBinaryValue {
+                val: 4,
+                max_bits: 3,
+            },
+            HuffmanBinaryValue {
+                val: 0,
+                max_bits: 4,
+            },
+            HuffmanBinaryValue {
+                val: 6,
+                max_bits: 3,
+            },
+            HuffmanBinaryValue {
+                val: 1,
+                max_bits: 3,
+            },
+            HuffmanBinaryValue {
+                val: 6,
+                max_bits: 3,
+            },
+            HuffmanBinaryValue {
+                val: 14,
+                max_bits: 4,
+            },
+            HuffmanBinaryValue {
+                val: 4,
+                max_bits: 4,
+            },
+            HuffmanBinaryValue {
+                val: 11,
+                max_bits: 5,
+            },
+            HuffmanBinaryValue {
+                val: 2,
+                max_bits: 5,
+            },
+            HuffmanBinaryValue {
+                val: 30,
+                max_bits: 5,
+            },
+            HuffmanBinaryValue {
+                val: 10,
+                max_bits: 4,
+            },
+            HuffmanBinaryValue {
+                val: 3,
+                max_bits: 5,
+            },
+            HuffmanBinaryValue {
+                val: 10,
+                max_bits: 4,
+            },
+            HuffmanBinaryValue {
+                val: 11,
+                max_bits: 4,
+            },
+            HuffmanBinaryValue {
+                val: 6,
+                max_bits: 3,
+            },
+            HuffmanBinaryValue {
+                val: 30,
+                max_bits: 5,
+            },
+            HuffmanBinaryValue {
+                val: 4,
+                max_bits: 3,
+            },
+            HuffmanBinaryValue {
+                val: 14,
+                max_bits: 4,
+            },
+            HuffmanBinaryValue {
+                val: 4,
+                max_bits: 4,
+            },
+            HuffmanBinaryValue {
+                val: 6,
+                max_bits: 4,
+            },
+            HuffmanBinaryValue {
+                val: 4,
+                max_bits: 3,
+            },
+            HuffmanBinaryValue {
+                val: 0,
+                max_bits: 4,
+            },
+            HuffmanBinaryValue {
+                val: 6,
+                max_bits: 3,
+            },
+            HuffmanBinaryValue {
+                val: 1,
+                max_bits: 3,
+            },
+            HuffmanBinaryValue {
+                val: 4,
+                max_bits: 3,
+            },
+            HuffmanBinaryValue {
+                val: 1,
+                max_bits: 3,
+            },
+            HuffmanBinaryValue {
+                val: 14,
+                max_bits: 5,
+            },
+            HuffmanBinaryValue {
+                val: 11,
+                max_bits: 4,
+            },
+            HuffmanBinaryValue {
+                val: 15,
+                max_bits: 5,
+            },
+            HuffmanBinaryValue {
+                val: 6,
+                max_bits: 3,
+            },
+            HuffmanBinaryValue {
+                val: 1,
+                max_bits: 3,
+            },
+        ],
     },
-    left: Some(
-        RefCell {
-            value: Node {
-                val: HuffmanValue {
-                    char: None,
-                    occurance: 16,
-                },
-                left: Some(
-                    RefCell {
-                        value: Node {
-                            val: HuffmanValue {
-                                char: None,
-                                occurance: 8,
-                            },
-                            left: Some(
-                                RefCell {
-                                    value: Node {
-                                        val: HuffmanValue {
-                                            char: None,
-                                            occurance: 4,
-                                        },
-                                        left: Some(
-                                            RefCell {
-                                                value: Node {
-                                                    val: HuffmanValue {
-                                                        char: Some(
-                                                            'h',
-                                                        ),
-                                                        occurance: 2,
-                                                    },
-                                                    left: None,
-                                                    right: None,
-                                                },
-                                            },
-                                        ),
-                                        right: Some(
-                                            RefCell {
-                                                value: Node {
-                                                    val: HuffmanValue {
-                                                        char: None,
-                                                        occurance: 2,
-                                                    },
-                                                    left: Some(
-                                                        RefCell {
-                                                            value: Node {
-                                                                val: HuffmanValue {
-                                                                    char: Some(
-                                                                        'g',
-                                                                    ),
-                                                                    occurance: 1,
-                                                                },
-                                                                left: None,
-                                                                right: None,
-                                                            },
-                                                        },
-                                                    ),
-                                                    right: Some(
-                                                        RefCell {
-                                                            value: Node {
-                                                                val: HuffmanValue {
-                                                                    char: Some(
-                                                                        'f',
-                                                                    ),
-                                                                    occurance: 1,
-                                                                },
-                                                                left: None,
-                                                                right: None,
-                                                            },
-                                                        },
-                                                    ),
-                                                },
-                                            },
-                                        ),
-                                    },
-                                },
-                            ),
-                            right: Some(
-                                RefCell {
-                                    value: Node {
-                                        val: HuffmanValue {
-                                            char: Some(
-                                                'r',
-                                            ),
-                                            occurance: 4,
-                                        },
-                                        left: None,
-                                        right: None,
-                                    },
-                                },
-                            ),
-                        },
-                    },
-                ),
-                right: Some(
-                    RefCell {
-                        value: Node {
-                            val: HuffmanValue {
-                                char: None,
-                                occurance: 8,
-                            },
-                            left: Some(
-                                RefCell {
-                                    value: Node {
-                                        val: HuffmanValue {
-                                            char: None,
-                                            occurance: 4,
-                                        },
-                                        left: Some(
-                                            RefCell {
-                                                value: Node {
-                                                    val: HuffmanValue {
-                                                        char: Some(
-                                                            'm',
-                                                        ),
-                                                        occurance: 2,
-                                                    },
-                                                    left: None,
-                                                    right: None,
-                                                },
-                                            },
-                                        ),
-                                        right: Some(
-                                            RefCell {
-                                                value: Node {
-                                                    val: HuffmanValue {
-                                                        char: None,
-                                                        occurance: 2,
-                                                    },
-                                                    left: Some(
-                                                        RefCell {
-                                                            value: Node {
-                                                                val: HuffmanValue {
-                                                                    char: Some(
-                                                                        'H',
-                                                                    ),
-                                                                    occurance: 1,
-                                                                },
-                                                                left: None,
-                                                                right: None,
-                                                            },
-                                                        },
-                                                    ),
-                                                    right: Some(
-                                                        RefCell {
-                                                            value: Node {
-                                                                val: HuffmanValue {
-                                                                    char: Some(
-                                                                        'a',
-                                                                    ),
-                                                                    occurance: 1,
-                                                                },
-                                                                left: None,
-                                                                right: None,
-                                                            },
-                                                        },
-                                                    ),
-                                                },
-                                            },
-                                        ),
-                                    },
-                                },
-                            ),
-                            right: Some(
-                                RefCell {
-                                    value: Node {
-                                        val: HuffmanValue {
-                                            char: None,
-                                            occurance: 4,
-                                        },
-                                        left: Some(
-                                            RefCell {
-                                                value: Node {
-                                                    val: HuffmanValue {
-                                                        char: Some(
-                                                            'o',
-                                                        ),
-                                                        occurance: 2,
-                                                    },
-                                                    left: None,
-                                                    right: None,
-                                                },
-                                            },
-                                        ),
-                                        right: Some(
-                                            RefCell {
-                                                value: Node {
-                                                    val: HuffmanValue {
-                                                        char: None,
-                                                        occurance: 2,
-                                                    },
-                                                    left: Some(
-                                                        RefCell {
-                                                            value: Node {
-                                                                val: HuffmanValue {
-                                                                    char: Some(
-                                                                        'u',
-                                                                    ),
-                                                                    occurance: 1,
-                                                                },
-                                                                left: None,
-                                                                right: None,
-                                                            },
-                                                        },
-                                                    ),
-                                                    right: Some(
-                                                        RefCell {
-                                                            value: Node {
-                                                                val: HuffmanValue {
-                                                                    char: Some(
-                                                                        'k',
-                                                                    ),
-                                                                    occurance: 1,
-                                                                },
-                                                                left: None,
-                                                                right: None,
-                                                            },
-                                                        },
-                                                    ),
-                                                },
-                                            },
-                                        ),
-                                    },
-                                },
-                            ),
-                        },
-                    },
-                ),
-            },
+    Node {
+        val: HuffmanValue {
+            char: None,
+            occurance: 37,
         },
-    ),
-    right: Some(
-        RefCell {
-            value: Node {
-                val: HuffmanValue {
-                    char: None,
-                    occurance: 21,
+        left: Some(
+            RefCell {
+                value: Node {
+                    val: HuffmanValue {
+                        char: None,
+                        occurance: 16,
+                    },
+                    left: Some(
+                        RefCell {
+                            value: Node {
+                                val: HuffmanValue {
+                                    char: None,
+                                    occurance: 8,
+                                },
+                                left: Some(
+                                    RefCell {
+                                        value: Node {
+                                            val: HuffmanValue {
+                                                char: None,
+                                                occurance: 4,
+                                            },
+                                            left: Some(
+                                                RefCell {
+                                                    value: Node {
+                                                        val: HuffmanValue {
+                                                            char: Some(
+                                                                'h',
+                                                            ),
+                                                            occurance: 2,
+                                                        },
+                                                        left: None,
+                                                        right: None,
+                                                    },
+                                                },
+                                            ),
+                                            right: Some(
+                                                RefCell {
+                                                    value: Node {
+                                                        val: HuffmanValue {
+                                                            char: None,
+                                                            occurance: 2,
+                                                        },
+                                                        left: Some(
+                                                            RefCell {
+                                                                value: Node {
+                                                                    val: HuffmanValue {
+                                                                        char: Some(
+                                                                            'g',
+                                                                        ),
+                                                                        occurance: 1,
+                                                                    },
+                                                                    left: None,
+                                                                    right: None,
+                                                                },
+                                                            },
+                                                        ),
+                                                        right: Some(
+                                                            RefCell {
+                                                                value: Node {
+                                                                    val: HuffmanValue {
+                                                                        char: Some(
+                                                                            'f',
+                                                                        ),
+                                                                        occurance: 1,
+                                                                    },
+                                                                    left: None,
+                                                                    right: None,
+                                                                },
+                                                            },
+                                                        ),
+                                                    },
+                                                },
+                                            ),
+                                        },
+                                    },
+                                ),
+                                right: Some(
+                                    RefCell {
+                                        value: Node {
+                                            val: HuffmanValue {
+                                                char: Some(
+                                                    'r',
+                                                ),
+                                                occurance: 4,
+                                            },
+                                            left: None,
+                                            right: None,
+                                        },
+                                    },
+                                ),
+                            },
+                        },
+                    ),
+                    right: Some(
+                        RefCell {
+                            value: Node {
+                                val: HuffmanValue {
+                                    char: None,
+                                    occurance: 8,
+                                },
+                                left: Some(
+                                    RefCell {
+                                        value: Node {
+                                            val: HuffmanValue {
+                                                char: None,
+                                                occurance: 4,
+                                            },
+                                            left: Some(
+                                                RefCell {
+                                                    value: Node {
+                                                        val: HuffmanValue {
+                                                            char: Some(
+                                                                'm',
+                                                            ),
+                                                            occurance: 2,
+                                                        },
+                                                        left: None,
+                                                        right: None,
+                                                    },
+                                                },
+                                            ),
+                                            right: Some(
+                                                RefCell {
+                                                    value: Node {
+                                                        val: HuffmanValue {
+                                                            char: None,
+                                                            occurance: 2,
+                                                        },
+                                                        left: Some(
+                                                            RefCell {
+                                                                value: Node {
+                                                                    val: HuffmanValue {
+                                                                        char: Some(
+                                                                            'H',
+                                                                        ),
+                                                                        occurance: 1,
+                                                                    },
+                                                                    left: None,
+                                                                    right: None,
+                                                                },
+                                                            },
+                                                        ),
+                                                        right: Some(
+                                                            RefCell {
+                                                                value: Node {
+                                                                    val: HuffmanValue {
+                                                                        char: Some(
+                                                                            'a',
+                                                                        ),
+                                                                        occurance: 1,
+                                                                    },
+                                                                    left: None,
+                                                                    right: None,
+                                                                },
+                                                            },
+                                                        ),
+                                                    },
+                                                },
+                                            ),
+                                        },
+                                    },
+                                ),
+                                right: Some(
+                                    RefCell {
+                                        value: Node {
+                                            val: HuffmanValue {
+                                                char: None,
+                                                occurance: 4,
+                                            },
+                                            left: Some(
+                                                RefCell {
+                                                    value: Node {
+                                                        val: HuffmanValue {
+                                                            char: Some(
+                                                                'o',
+                                                            ),
+                                                            occurance: 2,
+                                                        },
+                                                        left: None,
+                                                        right: None,
+                                                    },
+                                                },
+                                            ),
+                                            right: Some(
+                                                RefCell {
+                                                    value: Node {
+                                                        val: HuffmanValue {
+                                                            char: None,
+                                                            occurance: 2,
+                                                        },
+                                                        left: Some(
+                                                            RefCell {
+                                                                value: Node {
+                                                                    val: HuffmanValue {
+                                                                        char: Some(
+                                                                            'u',
+                                                                        ),
+                                                                        occurance: 1,
+                                                                    },
+                                                                    left: None,
+                                                                    right: None,
+                                                                },
+                                                            },
+                                                        ),
+                                                        right: Some(
+                                                            RefCell {
+                                                                value: Node {
+                                                                    val: HuffmanValue {
+                                                                        char: Some(
+                                                                            'k',
+                                                                        ),
+                                                                        occurance: 1,
+                                                                    },
+                                                                    left: None,
+                                                                    right: None,
+                                                                },
+                                                            },
+                                                        ),
+                                                    },
+                                                },
+                                            ),
+                                        },
+                                    },
+                                ),
+                            },
+                        },
+                    ),
                 },
-                left: Some(
-                    RefCell {
-                        value: Node {
-                            val: HuffmanValue {
-                                char: None,
-                                occurance: 8,
-                            },
-                            left: Some(
-                                RefCell {
-                                    value: Node {
-                                        val: HuffmanValue {
-                                            char: Some(
-                                                't',
-                                            ),
-                                            occurance: 4,
-                                        },
-                                        left: None,
-                                        right: None,
-                                    },
-                                },
-                            ),
-                            right: Some(
-                                RefCell {
-                                    value: Node {
-                                        val: HuffmanValue {
-                                            char: None,
-                                            occurance: 4,
-                                        },
-                                        left: Some(
-                                            RefCell {
-                                                value: Node {
-                                                    val: HuffmanValue {
-                                                        char: Some(
-                                                            'i',
-                                                        ),
-                                                        occurance: 2,
-                                                    },
-                                                    left: None,
-                                                    right: None,
-                                                },
-                                            },
-                                        ),
-                                        right: Some(
-                                            RefCell {
-                                                value: Node {
-                                                    val: HuffmanValue {
-                                                        char: Some(
-                                                            'c',
-                                                        ),
-                                                        occurance: 2,
-                                                    },
-                                                    left: None,
-                                                    right: None,
-                                                },
-                                            },
-                                        ),
-                                    },
-                                },
-                            ),
-                        },
-                    },
-                ),
-                right: Some(
-                    RefCell {
-                        value: Node {
-                            val: HuffmanValue {
-                                char: None,
-                                occurance: 13,
-                            },
-                            left: Some(
-                                RefCell {
-                                    value: Node {
-                                        val: HuffmanValue {
-                                            char: Some(
-                                                'e',
-                                            ),
-                                            occurance: 6,
-                                        },
-                                        left: None,
-                                        right: None,
-                                    },
-                                },
-                            ),
-                            right: Some(
-                                RefCell {
-                                    value: Node {
-                                        val: HuffmanValue {
-                                            char: None,
-                                            occurance: 7,
-                                        },
-                                        left: Some(
-                                            RefCell {
-                                                value: Node {
-                                                    val: HuffmanValue {
-                                                        char: Some(
-                                                            ' ',
-                                                        ),
-                                                        occurance: 3,
-                                                    },
-                                                    left: None,
-                                                    right: None,
-                                                },
-                                            },
-                                        ),
-                                        right: Some(
-                                            RefCell {
-                                                value: Node {
-                                                    val: HuffmanValue {
-                                                        char: None,
-                                                        occurance: 4,
-                                                    },
-                                                    left: Some(
-                                                        RefCell {
-                                                            value: Node {
-                                                                val: HuffmanValue {
-                                                                    char: Some(
-                                                                        'n',
-                                                                    ),
-                                                                    occurance: 2,
-                                                                },
-                                                                left: None,
-                                                                right: None,
-                                                            },
-                                                        },
-                                                    ),
-                                                    right: Some(
-                                                        RefCell {
-                                                            value: Node {
-                                                                val: HuffmanValue {
-                                                                    char: Some(
-                                                                        'l',
-                                                                    ),
-                                                                    occurance: 2,
-                                                                },
-                                                                left: None,
-                                                                right: None,
-                                                            },
-                                                        },
-                                                    ),
-                                                },
-                                            },
-                                        ),
-                                    },
-                                },
-                            ),
-                        },
-                    },
-                ),
             },
-        },
-    ),
-}
+        ),
+        right: Some(
+            RefCell {
+                value: Node {
+                    val: HuffmanValue {
+                        char: None,
+                        occurance: 21,
+                    },
+                    left: Some(
+                        RefCell {
+                            value: Node {
+                                val: HuffmanValue {
+                                    char: None,
+                                    occurance: 8,
+                                },
+                                left: Some(
+                                    RefCell {
+                                        value: Node {
+                                            val: HuffmanValue {
+                                                char: Some(
+                                                    't',
+                                                ),
+                                                occurance: 4,
+                                            },
+                                            left: None,
+                                            right: None,
+                                        },
+                                    },
+                                ),
+                                right: Some(
+                                    RefCell {
+                                        value: Node {
+                                            val: HuffmanValue {
+                                                char: None,
+                                                occurance: 4,
+                                            },
+                                            left: Some(
+                                                RefCell {
+                                                    value: Node {
+                                                        val: HuffmanValue {
+                                                            char: Some(
+                                                                'i',
+                                                            ),
+                                                            occurance: 2,
+                                                        },
+                                                        left: None,
+                                                        right: None,
+                                                    },
+                                                },
+                                            ),
+                                            right: Some(
+                                                RefCell {
+                                                    value: Node {
+                                                        val: HuffmanValue {
+                                                            char: Some(
+                                                                'c',
+                                                            ),
+                                                            occurance: 2,
+                                                        },
+                                                        left: None,
+                                                        right: None,
+                                                    },
+                                                },
+                                            ),
+                                        },
+                                    },
+                                ),
+                            },
+                        },
+                    ),
+                    right: Some(
+                        RefCell {
+                            value: Node {
+                                val: HuffmanValue {
+                                    char: None,
+                                    occurance: 13,
+                                },
+                                left: Some(
+                                    RefCell {
+                                        value: Node {
+                                            val: HuffmanValue {
+                                                char: Some(
+                                                    'e',
+                                                ),
+                                                occurance: 6,
+                                            },
+                                            left: None,
+                                            right: None,
+                                        },
+                                    },
+                                ),
+                                right: Some(
+                                    RefCell {
+                                        value: Node {
+                                            val: HuffmanValue {
+                                                char: None,
+                                                occurance: 7,
+                                            },
+                                            left: Some(
+                                                RefCell {
+                                                    value: Node {
+                                                        val: HuffmanValue {
+                                                            char: Some(
+                                                                ' ',
+                                                            ),
+                                                            occurance: 3,
+                                                        },
+                                                        left: None,
+                                                        right: None,
+                                                    },
+                                                },
+                                            ),
+                                            right: Some(
+                                                RefCell {
+                                                    value: Node {
+                                                        val: HuffmanValue {
+                                                            char: None,
+                                                            occurance: 4,
+                                                        },
+                                                        left: Some(
+                                                            RefCell {
+                                                                value: Node {
+                                                                    val: HuffmanValue {
+                                                                        char: Some(
+                                                                            'n',
+                                                                        ),
+                                                                        occurance: 2,
+                                                                    },
+                                                                    left: None,
+                                                                    right: None,
+                                                                },
+                                                            },
+                                                        ),
+                                                        right: Some(
+                                                            RefCell {
+                                                                value: Node {
+                                                                    val: HuffmanValue {
+                                                                        char: Some(
+                                                                            'l',
+                                                                        ),
+                                                                        occurance: 2,
+                                                                    },
+                                                                    left: None,
+                                                                    right: None,
+                                                                },
+                                                            },
+                                                        ),
+                                                    },
+                                                },
+                                            ),
+                                        },
+                                    },
+                                ),
+                            },
+                        },
+                    ),
+                },
+            },
+        ),
+    },
+)
