@@ -18,11 +18,16 @@
 // Something like MinHeapValue trait and the user can implement a struct with this trait and the
 // struct can have { node: Some(node), node_val: i64, somehting: None }
 
-pub struct MinHeap {
-    values: Vec<i64>,
+pub trait Constraints: PartialEq + Eq + PartialOrd + Ord {}
+
+impl<T: PartialEq + Eq + PartialOrd + Ord> Constraints for T {}
+
+#[derive(Debug)]
+pub struct MinHeap<T: Constraints> {
+    values: Vec<T>,
 }
 
-impl MinHeap {
+impl<T: Constraints> MinHeap<T> {
     pub fn new() -> Self {
         Self::with_capacity(32)
     }
@@ -34,14 +39,14 @@ impl MinHeap {
     }
 }
 
-impl MinHeap {
-    pub fn insert(&mut self, value: i64) {
+impl<T: Constraints> MinHeap<T> {
+    pub fn insert(&mut self, value: T) {
         self.values.push(value);
 
         self.heapify_bottom_up();
     }
 
-    pub fn pop(&mut self) -> Option<i64> {
+    pub fn pop(&mut self) -> Option<T> {
         if self.values.len() == 0 {
             None
         } else if self.values.len() == 1 {
@@ -59,6 +64,10 @@ impl MinHeap {
 
     pub fn has_element(&self) -> bool {
         self.values.len() > 0
+    }
+
+    pub fn size(&self) -> usize {
+        self.values.len()
     }
 
     fn heapify_bottom_up(&mut self) {
@@ -102,22 +111,18 @@ impl MinHeap {
     }
 
     fn swap(&mut self, index1: usize, index2: usize) {
-        let temp = self.values[index1];
-        self.values[index1] = self.values[index2];
-        self.values[index2] = temp;
+        self.values.swap(index1, index2);
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use std::borrow::Borrow;
-
     use super::MinHeap;
     use proptest::prelude::*;
 
     // TODO: add property testing
 
-    fn create_min_heap() -> MinHeap {
+    fn create_min_heap() -> MinHeap<i64> {
         let mut min_heap = MinHeap::new();
         let mut values: [usize; 10] = core::array::from_fn(|i| i + 1);
 

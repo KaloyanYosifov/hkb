@@ -6,10 +6,33 @@ impl<T: PartialEq + Eq + PartialOrd + Ord> Constraints for T {}
 
 pub type NodeRef<T> = Rc<RefCell<Node<T>>>;
 
+#[derive(Ord, Eq, Debug)]
 pub struct Node<T: PartialEq + Eq + PartialOrd + Ord> {
     pub val: T,
     left: Option<NodeRef<T>>,
     right: Option<NodeRef<T>>,
+}
+
+impl<T: Constraints> PartialEq for Node<T> {
+    fn eq(&self, other: &Self) -> bool {
+        self.val == other.val
+    }
+}
+
+impl<T: Constraints> PartialOrd for Node<T> {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        let val = {
+            if self.val > other.val {
+                std::cmp::Ordering::Greater
+            } else if self.val < other.val {
+                std::cmp::Ordering::Less
+            } else {
+                std::cmp::Ordering::Equal
+            }
+        };
+
+        Some(val)
+    }
 }
 
 impl<T: PartialEq + Eq + PartialOrd + Ord> Node<T> {

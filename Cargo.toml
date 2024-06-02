@@ -15,6 +15,7 @@ diesel_migrations = { version = "2.1.0" }
 tokio = { version = "1.37.0", features = ["full"] }
 serde = { version = "1.0.201", features = ["derive"] }
 serde_json = { version = "1.0.117" }
+insta = { version = "1.39.0" }
 rodio = { version = "0.18.0" }
 proptest = { version = "0.9.6" }
 parking_lot = { version = "0.12.1", features = ["send_guard"] }
