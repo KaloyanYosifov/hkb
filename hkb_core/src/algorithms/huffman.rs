@@ -70,16 +70,41 @@ impl HuffmanEncoder {
     }
 }
 
+pub struct HuffmanDecoder;
+impl HuffmanDecoder {
+    pub fn decode(binary: HuffmanBinary, node: HuffmanNode) -> String {
+        // TODO: figure out the length to put as a capacity
+        let mut message = String::with_capacity(512);
+
+        for byte in binary.binary {
+            // TODO: catch errors
+            message.push(node.from_binary(byte).unwrap());
+        }
+
+        message
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use insta::assert_debug_snapshot;
 
-    use super::HuffmanEncoder;
+    use super::{HuffmanDecoder, HuffmanEncoder};
 
     #[test]
     fn it_generates_correct_snapshot() {
         let text = "Hello there magnificent mothertrucker";
 
         assert_debug_snapshot!(HuffmanEncoder::compress(text));
+    }
+
+    #[test]
+    fn it_can_decode_huffman_codes() {
+        let text = "Hello there magnificent mothertrucker";
+        let (binary, node) = HuffmanEncoder::compress(text);
+
+        let message = HuffmanDecoder::decode(binary, node);
+
+        assert_eq!(text, message);
     }
 }
