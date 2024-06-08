@@ -12,7 +12,7 @@ pub type HuffmanNode = Node<HuffmanValue>;
 pub struct HuffmanEncoder;
 
 impl HuffmanEncoder {
-    pub fn compress(text: &str) -> (HuffmanBinary, HuffmanNode) {
+    pub fn encode(text: &str) -> (HuffmanBinary, HuffmanNode) {
         let mut huffman_values: Vec<HuffmanValue> = Vec::with_capacity(text.len() / 2);
         let mut occurance_map: HashMap<char, usize> = HashMap::with_capacity(text.len() / 2);
 
@@ -95,13 +95,13 @@ mod tests {
     fn it_generates_correct_snapshot() {
         let text = "Hello there magnificent mothertrucker";
 
-        assert_debug_snapshot!(HuffmanEncoder::compress(text));
+        assert_debug_snapshot!(HuffmanEncoder::encode(text));
     }
 
     #[test]
     fn it_can_decode_huffman_codes() {
         let text = "Hello there magnificent mothertrucker";
-        let (binary, node) = HuffmanEncoder::compress(text);
+        let (binary, node) = HuffmanEncoder::encode(text);
 
         let message = HuffmanDecoder::decode(binary, node);
 
