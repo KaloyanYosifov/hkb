@@ -148,4 +148,13 @@ mod tests {
 
         assert!(false);
     }
+
+    #[test]
+    fn it_can_open_big_jpeg_file() {
+        let decoder = JpegDecoder::new();
+
+        decoder.decode("./test-files/big_4k.jpg").unwrap();
+
+        assert!(false);
+    }
 }
