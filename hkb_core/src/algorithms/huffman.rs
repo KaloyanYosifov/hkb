@@ -9,9 +9,9 @@ use crate::data_structures::{MinHeap, Node};
 
 pub type HuffmanNode = Node<HuffmanValue>;
 
-pub struct HuffmanEncoder;
+pub struct Huffman;
 
-impl HuffmanEncoder {
+impl Huffman {
     pub fn encode(text: &str) -> (HuffmanBinary, HuffmanNode) {
         let mut huffman_values: Vec<HuffmanValue> = Vec::with_capacity(text.len() / 2);
         let mut occurance_map: HashMap<char, usize> = HashMap::with_capacity(text.len() / 2);
@@ -68,10 +68,7 @@ impl HuffmanEncoder {
 
         (binary, root)
     }
-}
 
-pub struct HuffmanDecoder;
-impl HuffmanDecoder {
     pub fn decode(binary: HuffmanBinary, node: HuffmanNode) -> String {
         // TODO: figure out the length to put as a capacity
         let mut message = String::with_capacity(512);
@@ -89,21 +86,21 @@ impl HuffmanDecoder {
 mod tests {
     use insta::assert_debug_snapshot;
 
-    use super::{HuffmanDecoder, HuffmanEncoder};
+    use super::Huffman;
 
     #[test]
     fn it_generates_correct_snapshot() {
         let text = "Hello there magnificent mothertrucker";
 
-        assert_debug_snapshot!(HuffmanEncoder::encode(text));
+        assert_debug_snapshot!(Huffman::encode(text));
     }
 
     #[test]
     fn it_can_decode_huffman_codes() {
         let text = "Hello there magnificent mothertrucker";
-        let (binary, node) = HuffmanEncoder::encode(text);
+        let (binary, node) = Huffman::encode(text);
 
-        let message = HuffmanDecoder::decode(binary, node);
+        let message = Huffman::decode(binary, node);
 
         assert_eq!(text, message);
     }
