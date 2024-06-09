@@ -19,7 +19,7 @@ impl JpegHeader {
         let mut bytes: [u8; 16] = [0; 16];
         reader.read_exact(&mut bytes).unwrap();
 
-        let length = u16::from_le_bytes(bytes[0..2].try_into().unwrap());
+        let length = u16::from_be_bytes(bytes[0..2].try_into().unwrap());
 
         // if our length is 16
         // we got our JFIF Jpeg
@@ -30,8 +30,8 @@ impl JpegHeader {
             let version = format!("{}.{}", bytes[7], bytes[8]);
             let units = bytes[7];
 
-            let x_density = u16::from_le_bytes(bytes[10..12].try_into().unwrap());
-            let y_density = u16::from_le_bytes(bytes[12..14].try_into().unwrap());
+            let x_density = u16::from_be_bytes(bytes[10..12].try_into().unwrap());
+            let y_density = u16::from_be_bytes(bytes[12..14].try_into().unwrap());
             let density = format!("{}x{}", x_density, y_density);
 
             let thumbnail = format!("{}x{}", bytes[14], bytes[15]);
