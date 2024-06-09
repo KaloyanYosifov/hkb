@@ -51,6 +51,9 @@ impl JpegHeader {
 
 const JPEG_START_MARKER: [u8; 2] = [255, 216];
 const JPEG_HEADER_MARKER: [u8; 2] = [255, 224];
+const JPEG_QUANTIZATION_MARKER: [u8; 2] = [255, 219];
+const JPEG_FRAME_START_MARKER: [u8; 2] = [255, 192];
+const JPEG_HUFFMAN_MARKER: [u8; 2] = [255, 196];
 const JPEG_END_MARKER: [u8; 2] = [255, 217];
 
 fn bytes_match(bytes: &[u8; 2], bytes2: &[u8; 2]) -> bool {
@@ -58,19 +61,28 @@ fn bytes_match(bytes: &[u8; 2], bytes2: &[u8; 2]) -> bool {
 }
 
 enum JpegMarker {
-    START,
-    HEADER,
-    END,
+    Start,
+    Header,
+    End,
+    QuantizationTable,
+    FrameStart,
+    HuffmanTable,
 }
 
 impl JpegMarker {
     fn get_marker(bytes: &[u8; 2]) -> Option<Self> {
         if bytes_match(bytes, &JPEG_START_MARKER) {
-            Some(Self::START)
+            Some(Self::Start)
         } else if bytes_match(bytes, &JPEG_END_MARKER) {
-            Some(Self::END)
+            Some(Self::End)
         } else if bytes_match(bytes, &JPEG_HEADER_MARKER) {
-            Some(Self::HEADER)
+            Some(Self::Header)
+        } else if bytes_match(bytes, &JPEG_QUANTIZATION_MARKER) {
+            Some(Self::QuantizationTable)
+        } else if bytes_match(bytes, &JPEG_FRAME_START_MARKER) {
+            Some(Self::FrameStart)
+        } else if bytes_match(bytes, &JPEG_HUFFMAN_MARKER) {
+            Some(Self::HuffmanTable)
         } else {
             None
         }
@@ -111,25 +123,60 @@ impl JpegDecoder {
         let mut buffer: [u8; 2] = [0; 2];
         reader.read_exact(&mut buffer)?;
 
-        let mut marker = JpegMarker::get_marker(&buffer);
+        let marker = JpegMarker::get_marker(&buffer);
 
-        if marker.is_none() || !matches!(marker.unwrap(), JpegMarker::START) {
+        if marker.is_none() || !matches!(marker.unwrap(), JpegMarker::Start) {
             return Err(JpegDecoderError::NotAJpegFile);
         }
 
-        marker = JpegMarker::get_marker(&buffer);
+        loop {
+            let result = reader.read_exact(&mut buffer);
 
-        while let Some(actual_marker) = marker {
-            match actual_marker {
-                JpegMarker::HEADER => {
-                    println!("{:?}", JpegHeader::from_reader(&mut reader));
-                }
-                JpegMarker::END => break,
-                _ => {}
+            if result.is_err() {
+                break;
             }
 
-            reader.read_exact(&mut buffer)?;
-            marker = JpegMarker::get_marker(&buffer);
+            let marker = JpegMarker::get_marker(&buffer);
+
+            if let Some(actual_marker) = marker {
+                match actual_marker {
+                    JpegMarker::Header => {
+                        println!("{:?}", JpegHeader::from_reader(&mut reader));
+                    }
+                    JpegMarker::QuantizationTable => {
+                        // TODO: implement a vector containing tables
+                        let mut bytes: [u8; 2] = [0; 2];
+                        reader.read_exact(&mut bytes)?;
+
+                        let length = u16::from_be_bytes(bytes[0..2].try_into().unwrap());
+                        let mut bytes = vec![0; length as usize];
+                        reader.read_exact(&mut bytes)?;
+                        println!("QuantizationTable: {:?}", bytes);
+                    }
+                    JpegMarker::FrameStart => {
+                        // TODO: implement a vector containing tables
+                        let mut bytes: [u8; 2] = [0; 2];
+                        reader.read_exact(&mut bytes)?;
+
+                        let length = u16::from_be_bytes(bytes[0..2].try_into().unwrap());
+                        let mut bytes = vec![0; length as usize];
+                        reader.read_exact(&mut bytes)?;
+                        println!("FrameStart: {:?}", bytes);
+                    }
+                    JpegMarker::HuffmanTable => {
+                        // TODO: implement a vector containing tables
+                        let mut bytes: [u8; 2] = [0; 2];
+                        reader.read_exact(&mut bytes)?;
+
+                        let length = u16::from_be_bytes(bytes[0..2].try_into().unwrap());
+                        let mut bytes = vec![0; length as usize];
+                        reader.read_exact(&mut bytes)?;
+                        println!("HuffmanTable: {:?}", bytes);
+                    }
+                    JpegMarker::End => break,
+                    _ => {}
+                }
+            }
         }
 
         Ok(())
