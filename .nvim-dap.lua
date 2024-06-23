@@ -16,7 +16,18 @@ dap.configurations.rust = {
         program = function()
             return vim.fn.getcwd() .. "/target/debug/hkb_client"
         end,
-        cwd = "${workspaceFolder}",
+        cwd = "${workspaceFolder}/hkb_client",
+        stopOnEntry = false,
+    },
+
+    {
+        name = "hkb_daemon",
+        type = "lldb",
+        request = "launch",
+        program = function()
+            return vim.fn.getcwd() .. "/target/debug/hkb_daemon"
+        end,
+        cwd = "${workspaceFolder}/hkb_daemon",
         stopOnEntry = false,
     }
 }
