@@ -100,8 +100,15 @@ impl HumanDateParser {
             (day, month)
         };
         let mut date = self.start_date.clone();
+        let mut year = date.year();
 
-        date.set_ymd(date.year(), month, day)?;
+        match (date.month(), date.day()) {
+            (m, _) if m > month => year += 1,
+            (m, d) if m == month && d > day => year += 1,
+            _ => {}
+        }
+
+        date.set_ymd(year, month, day)?;
 
         Ok(date)
     }
@@ -199,9 +206,11 @@ mod tests {
     use crate::date::SimpleDate;
 
     macro_rules! assert_date_parsing {
-        ($input:literal, $expected: literal) => {
-            let date =
-                SimpleDate::parse_from_str("2024-04-14 08:00:00", "%Y-%m-%d %H:%M:%S").unwrap();
+        ($input:literal, $expected:literal) => {
+            assert_date_parsing!($input, $expected, "2024-04-14 08:00:00");
+        };
+        ($input:literal, $expected:literal, $start_date:expr) => {
+            let date = SimpleDate::parse_from_str($start_date, "%Y-%m-%d %H:%M:%S").unwrap();
             let date_parser = HumanDateParser::new(date);
             let date = date_parser
                 .parse($input)
@@ -216,21 +225,33 @@ mod tests {
         assert_date_parsing!("In 10 minutes", "2024-04-14T08:10:00Z");
         assert_date_parsing!("In 5 days", "2024-04-19T08:00:00Z");
         assert_date_parsing!("In 3 months", "2024-07-14T08:00:00Z");
+
+        // edge cases and new years
+        assert_date_parsing!("In 1 minute", "2025-01-01T00:00:00Z", "2024-12-31 23:59:00");
+        assert_date_parsing!("in 3 hours", "2025-01-01T01:00:00Z", "2024-12-31 22:00:00");
+        assert_date_parsing!("In 4 months", "2025-01-29T22:00:00Z", "2024-09-29 22:00:00");
     }
 
     #[test]
     fn it_can_parse_at_sentence() {
         assert_date_parsing!("At 05:00", "2024-04-14T05:00:00Z");
-        assert_date_parsing!("At 15:00 on the 31st of January", "2024-01-31T15:00:00Z");
-        assert_date_parsing!("At 22:30 on the 30th of March", "2024-03-30T22:30:00Z");
         assert_date_parsing!("At 13:00 on the 11th of December", "2024-12-11T13:00:00Z");
+
+        // edge cases and new years
+        assert_date_parsing!("At 15:00 on the 31st of January", "2025-01-31T15:00:00Z");
+        assert_date_parsing!("At 22:30 on the 30th of March", "2025-03-30T22:30:00Z");
     }
 
     #[test]
     fn it_can_parse_on_sentence() {
         assert_date_parsing!("On 5th of May", "2024-05-05T08:00:00Z");
         assert_date_parsing!("On the 5th of May", "2024-05-05T08:00:00Z");
-        assert_date_parsing!("On the 1st of January", "2024-01-01T08:00:00Z");
+        assert_date_parsing!("On the 1st of August", "2024-08-01T08:00:00Z");
+
+        // edge cases and new years
+        assert_date_parsing!("On 3rd of February", "2025-02-03T08:00:00Z");
+        assert_date_parsing!("On the 5th of March", "2025-03-05T08:00:00Z");
+        assert_date_parsing!("On the 1st of January", "2025-01-01T08:00:00Z");
     }
 
     #[test]
@@ -244,6 +265,18 @@ mod tests {
         assert_date_parsing!("Next Sunday", "2024-04-21T08:00:00Z");
         assert_date_parsing!("Next Week", "2024-04-21T08:00:00Z");
         assert_date_parsing!("Next Month", "2024-05-14T08:00:00Z");
+
+        // edge cases and new years
+        let start_date = "2024-12-31 22:00:00";
+        assert_date_parsing!("Next Monday", "2025-01-06T22:00:00Z", start_date);
+        assert_date_parsing!("Next Tuesday", "2025-01-07T22:00:00Z", start_date);
+        assert_date_parsing!("Next Wednesday", "2025-01-01T22:00:00Z", start_date);
+        assert_date_parsing!("Next Thursday", "2025-01-02T22:00:00Z", start_date);
+        assert_date_parsing!("Next Friday", "2025-01-03T22:00:00Z", start_date);
+        assert_date_parsing!("Next Saturday", "2025-01-04T22:00:00Z", start_date);
+        assert_date_parsing!("Next Sunday", "2025-01-05T22:00:00Z", start_date);
+        assert_date_parsing!("Next Week", "2025-01-07T22:00:00Z", start_date);
+        assert_date_parsing!("Next Month", "2025-01-31T22:00:00Z", start_date);
     }
 
     #[test]
@@ -257,5 +290,21 @@ mod tests {
         assert_date_parsing!("Next Sunday at 02:11", "2024-04-21T02:11:00Z");
         assert_date_parsing!("Next Week at 16:00", "2024-04-21T16:00:00Z");
         assert_date_parsing!("Next Month at 17:54", "2024-05-14T17:54:00Z");
+
+        // edge cases and new years
+        let start_date = "2024-12-31 22:00:00";
+        assert_date_parsing!("Next Monday at 13:00", "2025-01-06T13:00:00Z", start_date);
+        assert_date_parsing!("Next Tuesday at 21:00", "2025-01-07T21:00:00Z", start_date);
+        assert_date_parsing!(
+            "Next Wednesday at 23:59",
+            "2025-01-01T23:59:00Z",
+            start_date
+        );
+        assert_date_parsing!("Next Thursday at 03:00", "2025-01-02T03:00:00Z", start_date);
+        assert_date_parsing!("Next Friday at 5:00", "2025-01-03T05:00:00Z", start_date);
+        assert_date_parsing!("Next Saturday at 5:45", "2025-01-04T05:45:00Z", start_date);
+        assert_date_parsing!("Next Sunday at 02:11", "2025-01-05T02:11:00Z", start_date);
+        assert_date_parsing!("Next Week at 16:00", "2025-01-07T16:00:00Z", start_date);
+        assert_date_parsing!("Next Month at 17:54", "2025-01-31T17:54:00Z", start_date);
     }
 }
