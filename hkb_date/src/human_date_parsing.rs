@@ -171,6 +171,19 @@ impl HumanDateParser {
         }
     }
 
+    fn parse_tomorrow_sentence(&self, sentence: Pair<Rule>) -> DateParsingResult {
+        let mut inner = sentence.into_inner();
+        let start_date = {
+            if let Some(at_sentence) = inner.next() {
+                self.parse_at_sentence(at_sentence)?
+            } else {
+                self.start_date.clone()
+            }
+        };
+
+        Ok(start_date.add_duration(Duration::Day(1)).unwrap())
+    }
+
     /// Parse a human date string into a date
     ///
     /// Example
@@ -195,6 +208,7 @@ impl HumanDateParser {
             Rule::AT => self.parse_at_sentence(sentence),
             Rule::ON => self.parse_on_sentence(sentence),
             Rule::NEXT => self.parse_next_sentence(sentence),
+            Rule::TOMORROW => self.parse_tomorrow_sentence(sentence),
             _ => Err(DateParsingError::UnknownRuleEncountered()),
         }
     }
@@ -306,5 +320,13 @@ mod tests {
         assert_date_parsing!("Next Sunday at 02:11", "2025-01-05T02:11:00Z", start_date);
         assert_date_parsing!("Next Week at 16:00", "2025-01-07T16:00:00Z", start_date);
         assert_date_parsing!("Next Month at 17:54", "2025-01-31T17:54:00Z", start_date);
+    }
+
+    #[test]
+    fn it_can_parse_tomorrow_sentence() {
+        assert_date_parsing!("Tomorrow", "2024-04-15T08:00:00Z");
+        assert_date_parsing!("Tomorrow at 03:00", "2024-04-15T03:00:00Z");
+        assert_date_parsing!("Tomorrow at 15:35", "2024-04-15T15:35:00Z");
+        assert_date_parsing!("Tomorrow at 23:59", "2024-04-15T23:59:00Z");
     }
 }

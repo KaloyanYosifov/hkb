@@ -1,14 +1,16 @@
-SENTENCE = _{ 
+SENTENCE = _{
     IN
     | AT
     | ON
     | NEXT
+    | TOMORROW
 }
 
 IN = { "in " ~ !"0" ~ number+ ~ " " ~ duration ~ "s"? }
 AT = { "at " ~ time ~ ":" ~ time ~ (" " ~ ON)? }
 ON = { "on " ~ "the "? ~ day ~ " of " ~ month }
 NEXT = { "next " ~ next_option ~ (" " ~ AT)? }
+TOMORROW = { "tomorrow" ~ (" " ~ AT)? }
 
 time = { number{1,2} }
 number = { ASCII_DIGIT }
@@ -40,7 +42,7 @@ month = {
     | "november"
     | "december"
 }
-duration = { 
+duration = {
     "second"
     | "minute"
     | "hour"
