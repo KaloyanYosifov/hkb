@@ -88,10 +88,10 @@ impl HumanDateParser {
     }
 
     fn parse_on_sentence(&self, sentence: Pair<Rule>) -> DateParsingResult {
+        let mut inner = sentence.into_inner();
         // We are unwrapping because we are sure we have these in the
         // data structure
         let (day, month) = {
-            let mut inner = sentence.into_inner();
             let day = inner.next().unwrap().as_str();
             let day = (&day[0..day.len() - 2]).parse::<u32>().unwrap();
             let month = inner.next().unwrap().as_str();
@@ -99,7 +99,13 @@ impl HumanDateParser {
 
             (day, month)
         };
-        let mut date = self.start_date.clone();
+        let mut date = {
+            if let Some(at_sentence) = inner.next() {
+                self.parse_at_sentence(at_sentence)?
+            } else {
+                self.start_date.clone()
+            }
+        };
         let mut year = date.year();
 
         match (date.month(), date.day()) {
@@ -266,6 +272,18 @@ mod tests {
         assert_date_parsing!("On 3rd of February", "2025-02-03T08:00:00Z");
         assert_date_parsing!("On the 5th of March", "2025-03-05T08:00:00Z");
         assert_date_parsing!("On the 1st of January", "2025-01-01T08:00:00Z");
+    }
+
+    #[test]
+    fn it_can_parse_on_sentence_with_specific_time() {
+        assert_date_parsing!("On 5th of May at 5:00", "2024-05-05T05:00:00Z");
+        assert_date_parsing!("On the 5th of May at 23:59", "2024-05-05T23:59:00Z");
+        assert_date_parsing!("On the 1st of August at 13:45", "2024-08-01T13:45:00Z");
+
+        // edge cases and new years
+        assert_date_parsing!("On 3rd of February at 13:10", "2025-02-03T13:10:00Z");
+        assert_date_parsing!("On the 5th of March at 18:05", "2025-03-05T18:05:00Z");
+        assert_date_parsing!("On the 1st of January at 21:33", "2025-01-01T21:33:00Z");
     }
 
     #[test]
