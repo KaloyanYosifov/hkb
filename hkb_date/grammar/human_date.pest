@@ -1,5 +1,6 @@
 SENTENCE = _{
     IN
+    | IN_ALT
     | AT
     | ON
     | NEXT
@@ -7,6 +8,7 @@ SENTENCE = _{
 }
 
 IN = { "in " ~ !"0" ~ number+ ~ " " ~ duration ~ "s"? }
+IN_ALT = { "in " ~ cardinal ~ " days" ~ (" " ~ AT)? }
 AT = { "at " ~ time ~ ":" ~ time ~ (" " ~ ON)? }
 ON = { "on " ~ "the "? ~ day ~ " of " ~ month ~ (" " ~ AT)? }
 NEXT = { "next " ~ next_option ~ (" " ~ AT)? }
@@ -64,4 +66,14 @@ next_option = {
     weekday
     | "week"
     | "month"
+}
+cardinal = {
+    "two"
+    | "three"
+    | "four"
+    | "five"
+    | "six"
+    | "seven"
+    | "eight"
+    | "nine"
 }
