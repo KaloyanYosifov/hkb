@@ -66,6 +66,21 @@ impl HumanDateParser {
 }
 
 impl HumanDateParser {
+    fn get_date_based_on_possible_at_sentence(
+        &self,
+        possible_at_sentence: Option<Pair<Rule>>,
+    ) -> DateParsingResult {
+        let date = {
+            if let Some(at_sentence) = possible_at_sentence {
+                self.parse_at_sentence(at_sentence)?
+            } else {
+                self.start_date.clone()
+            }
+        };
+
+        Ok(date)
+    }
+
     fn parse_in_sentence(&self, sentence: Pair<Rule>) -> DateParsingResult {
         let mut inner = sentence.into_inner();
         let mut pair = inner.next().unwrap();
@@ -87,11 +102,31 @@ impl HumanDateParser {
         Ok(date)
     }
 
+    fn parse_in_alt_sentence(&self, sentence: Pair<Rule>) -> DateParsingResult {
+        let mut inner = sentence.into_inner();
+        let pair = inner.next().unwrap();
+        let cardinal = pair.as_str();
+        let date = self.get_date_based_on_possible_at_sentence(inner.next())?;
+        let days_to_add = match cardinal {
+            "two" => 2,
+            "three" => 3,
+            "four" => 4,
+            "five" => 5,
+            "six" => 6,
+            "seven" => 7,
+            "eight" => 8,
+            "nine" => 9,
+            _ => 0,
+        };
+
+        Ok(date.add_duration(Duration::Day(days_to_add))?)
+    }
+
     fn parse_on_sentence(&self, sentence: Pair<Rule>) -> DateParsingResult {
+        let mut inner = sentence.into_inner();
         // We are unwrapping because we are sure we have these in the
         // data structure
         let (day, month) = {
-            let mut inner = sentence.into_inner();
             let day = inner.next().unwrap().as_str();
             let day = (&day[0..day.len() - 2]).parse::<u32>().unwrap();
             let month = inner.next().unwrap().as_str();
@@ -99,7 +134,7 @@ impl HumanDateParser {
 
             (day, month)
         };
-        let mut date = self.start_date.clone();
+        let mut date = self.get_date_based_on_possible_at_sentence(inner.next())?;
         let mut year = date.year();
 
         match (date.month(), date.day()) {
@@ -117,7 +152,6 @@ impl HumanDateParser {
         let mut inner = sentence.into_inner();
         let hour = inner.next().unwrap().as_str().parse::<u32>().unwrap();
         let minute = inner.next().unwrap().as_str().parse::<u32>().unwrap();
-
         let date = {
             let mut on_date = {
                 if let Some(pair) = inner.next() {
@@ -139,13 +173,7 @@ impl HumanDateParser {
         let mut inner = sentence.into_inner();
         let pair = inner.next().unwrap();
         let option = pair.as_str();
-        let start_date = {
-            if let Some(at_sentence) = inner.next() {
-                self.parse_at_sentence(at_sentence)?
-            } else {
-                self.start_date.clone()
-            }
-        };
+        let start_date = self.get_date_based_on_possible_at_sentence(inner.next())?;
 
         match option {
             day if DAYS_OF_WEEK.contains(&day) => {
@@ -171,6 +199,13 @@ impl HumanDateParser {
         }
     }
 
+    fn parse_tomorrow_sentence(&self, sentence: Pair<Rule>) -> DateParsingResult {
+        let mut inner = sentence.into_inner();
+        let start_date = self.get_date_based_on_possible_at_sentence(inner.next())?;
+
+        Ok(start_date.add_duration(Duration::Day(1)).unwrap())
+    }
+
     /// Parse a human date string into a date
     ///
     /// Example
@@ -192,9 +227,11 @@ impl HumanDateParser {
 
         match sentence.as_rule() {
             Rule::IN => self.parse_in_sentence(sentence),
+            Rule::IN_ALT => self.parse_in_alt_sentence(sentence),
             Rule::AT => self.parse_at_sentence(sentence),
             Rule::ON => self.parse_on_sentence(sentence),
             Rule::NEXT => self.parse_next_sentence(sentence),
+            Rule::TOMORROW => self.parse_tomorrow_sentence(sentence),
             _ => Err(DateParsingError::UnknownRuleEncountered()),
         }
     }
@@ -233,6 +270,43 @@ mod tests {
     }
 
     #[test]
+    fn it_can_parse_in_alt_sentence() {
+        assert_date_parsing!("In two days", "2024-04-16T08:00:00Z");
+        assert_date_parsing!("In three days", "2024-04-17T08:00:00Z");
+        assert_date_parsing!("In four days", "2024-04-18T08:00:00Z");
+        assert_date_parsing!("In five days", "2024-04-19T08:00:00Z");
+        assert_date_parsing!("In six days", "2024-04-20T08:00:00Z");
+        assert_date_parsing!("In seven days", "2024-04-21T08:00:00Z");
+        assert_date_parsing!("In eight days", "2024-04-22T08:00:00Z");
+        assert_date_parsing!("In nine days", "2024-04-23T08:00:00Z");
+    }
+
+    #[test]
+    fn it_can_parse_in_alt_sentence_with_specified_time() {
+        assert_date_parsing!("In two days at 5:00", "2024-04-16T05:00:00Z");
+        assert_date_parsing!("In three days at 18:30", "2024-04-17T18:30:00Z");
+        assert_date_parsing!("In four days at 23:59", "2024-04-18T23:59:00Z");
+        assert_date_parsing!("In five days at 21:00", "2024-04-19T21:00:00Z");
+        assert_date_parsing!("In six days at 1:00", "2024-04-20T01:00:00Z");
+        assert_date_parsing!("In seven days at 00:21", "2024-04-21T00:21:00Z");
+        assert_date_parsing!("In eight days at 09:00", "2024-04-22T09:00:00Z");
+        assert_date_parsing!("In nine days at 15:35", "2024-04-23T15:35:00Z");
+    }
+
+    #[test]
+    fn it_can_parse_in_alt_sentence_edge_cases() {
+        let start_date = "2024-12-31 22:00:00";
+        assert_date_parsing!("In two days", "2025-01-02T22:00:00Z", start_date);
+        assert_date_parsing!("In three days", "2025-01-03T22:00:00Z", start_date);
+        assert_date_parsing!("In four days", "2025-01-04T22:00:00Z", start_date);
+        assert_date_parsing!("In five days", "2025-01-05T22:00:00Z", start_date);
+        assert_date_parsing!("In six days", "2025-01-06T22:00:00Z", start_date);
+        assert_date_parsing!("In seven days", "2025-01-07T22:00:00Z", start_date);
+        assert_date_parsing!("In eight days", "2025-01-08T22:00:00Z", start_date);
+        assert_date_parsing!("In nine days", "2025-01-09T22:00:00Z", start_date);
+    }
+
+    #[test]
     fn it_can_parse_at_sentence() {
         assert_date_parsing!("At 05:00", "2024-04-14T05:00:00Z");
         assert_date_parsing!("At 13:00 on the 11th of December", "2024-12-11T13:00:00Z");
@@ -252,6 +326,18 @@ mod tests {
         assert_date_parsing!("On 3rd of February", "2025-02-03T08:00:00Z");
         assert_date_parsing!("On the 5th of March", "2025-03-05T08:00:00Z");
         assert_date_parsing!("On the 1st of January", "2025-01-01T08:00:00Z");
+    }
+
+    #[test]
+    fn it_can_parse_on_sentence_with_specific_time() {
+        assert_date_parsing!("On 5th of May at 5:00", "2024-05-05T05:00:00Z");
+        assert_date_parsing!("On the 5th of May at 23:59", "2024-05-05T23:59:00Z");
+        assert_date_parsing!("On the 1st of August at 13:45", "2024-08-01T13:45:00Z");
+
+        // edge cases and new years
+        assert_date_parsing!("On 3rd of February at 13:10", "2025-02-03T13:10:00Z");
+        assert_date_parsing!("On the 5th of March at 18:05", "2025-03-05T18:05:00Z");
+        assert_date_parsing!("On the 1st of January at 21:33", "2025-01-01T21:33:00Z");
     }
 
     #[test]
@@ -306,5 +392,13 @@ mod tests {
         assert_date_parsing!("Next Sunday at 02:11", "2025-01-05T02:11:00Z", start_date);
         assert_date_parsing!("Next Week at 16:00", "2025-01-07T16:00:00Z", start_date);
         assert_date_parsing!("Next Month at 17:54", "2025-01-31T17:54:00Z", start_date);
+    }
+
+    #[test]
+    fn it_can_parse_tomorrow_sentence() {
+        assert_date_parsing!("Tomorrow", "2024-04-15T08:00:00Z");
+        assert_date_parsing!("Tomorrow at 03:00", "2024-04-15T03:00:00Z");
+        assert_date_parsing!("Tomorrow at 15:35", "2024-04-15T15:35:00Z");
+        assert_date_parsing!("Tomorrow at 23:59", "2024-04-15T23:59:00Z");
     }
 }

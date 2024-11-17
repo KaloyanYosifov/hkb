@@ -1,14 +1,18 @@
-SENTENCE = _{ 
+SENTENCE = _{
     IN
+    | IN_ALT
     | AT
     | ON
     | NEXT
+    | TOMORROW
 }
 
 IN = { "in " ~ !"0" ~ number+ ~ " " ~ duration ~ "s"? }
+IN_ALT = { "in " ~ cardinal ~ " days" ~ (" " ~ AT)? }
 AT = { "at " ~ time ~ ":" ~ time ~ (" " ~ ON)? }
-ON = { "on " ~ "the "? ~ day ~ " of " ~ month }
+ON = { "on " ~ "the "? ~ day ~ " of " ~ month ~ (" " ~ AT)? }
 NEXT = { "next " ~ next_option ~ (" " ~ AT)? }
+TOMORROW = { "tomorrow" ~ (" " ~ AT)? }
 
 time = { number{1,2} }
 number = { ASCII_DIGIT }
@@ -40,7 +44,7 @@ month = {
     | "november"
     | "december"
 }
-duration = { 
+duration = {
     "second"
     | "minute"
     | "hour"
@@ -62,4 +66,14 @@ next_option = {
     weekday
     | "week"
     | "month"
+}
+cardinal = {
+    "two"
+    | "three"
+    | "four"
+    | "five"
+    | "six"
+    | "seven"
+    | "eight"
+    | "nine"
 }
