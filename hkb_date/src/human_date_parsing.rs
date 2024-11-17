@@ -66,6 +66,21 @@ impl HumanDateParser {
 }
 
 impl HumanDateParser {
+    fn get_date_based_on_possible_at_sentence(
+        &self,
+        possible_at_sentence: Option<Pair<Rule>>,
+    ) -> DateParsingResult {
+        let date = {
+            if let Some(at_sentence) = possible_at_sentence {
+                self.parse_at_sentence(at_sentence)?
+            } else {
+                self.start_date.clone()
+            }
+        };
+
+        Ok(date)
+    }
+
     fn parse_in_sentence(&self, sentence: Pair<Rule>) -> DateParsingResult {
         let mut inner = sentence.into_inner();
         let mut pair = inner.next().unwrap();
@@ -91,13 +106,7 @@ impl HumanDateParser {
         let mut inner = sentence.into_inner();
         let pair = inner.next().unwrap();
         let cardinal = pair.as_str();
-        let date = {
-            if let Some(at_sentence) = inner.next() {
-                self.parse_at_sentence(at_sentence)?
-            } else {
-                self.start_date.clone()
-            }
-        };
+        let date = self.get_date_based_on_possible_at_sentence(inner.next())?;
         let days_to_add = match cardinal {
             "two" => 2,
             "three" => 3,
@@ -125,13 +134,7 @@ impl HumanDateParser {
 
             (day, month)
         };
-        let mut date = {
-            if let Some(at_sentence) = inner.next() {
-                self.parse_at_sentence(at_sentence)?
-            } else {
-                self.start_date.clone()
-            }
-        };
+        let mut date = self.get_date_based_on_possible_at_sentence(inner.next())?;
         let mut year = date.year();
 
         match (date.month(), date.day()) {
@@ -149,7 +152,6 @@ impl HumanDateParser {
         let mut inner = sentence.into_inner();
         let hour = inner.next().unwrap().as_str().parse::<u32>().unwrap();
         let minute = inner.next().unwrap().as_str().parse::<u32>().unwrap();
-
         let date = {
             let mut on_date = {
                 if let Some(pair) = inner.next() {
@@ -171,13 +173,7 @@ impl HumanDateParser {
         let mut inner = sentence.into_inner();
         let pair = inner.next().unwrap();
         let option = pair.as_str();
-        let start_date = {
-            if let Some(at_sentence) = inner.next() {
-                self.parse_at_sentence(at_sentence)?
-            } else {
-                self.start_date.clone()
-            }
-        };
+        let start_date = self.get_date_based_on_possible_at_sentence(inner.next())?;
 
         match option {
             day if DAYS_OF_WEEK.contains(&day) => {
@@ -205,13 +201,7 @@ impl HumanDateParser {
 
     fn parse_tomorrow_sentence(&self, sentence: Pair<Rule>) -> DateParsingResult {
         let mut inner = sentence.into_inner();
-        let start_date = {
-            if let Some(at_sentence) = inner.next() {
-                self.parse_at_sentence(at_sentence)?
-            } else {
-                self.start_date.clone()
-            }
-        };
+        let start_date = self.get_date_based_on_possible_at_sentence(inner.next())?;
 
         Ok(start_date.add_duration(Duration::Day(1)).unwrap())
     }
