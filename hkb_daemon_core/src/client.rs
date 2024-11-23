@@ -95,7 +95,7 @@ impl Client {
     where
         F: Fn(&mut UnixStream),
     {
-        if let Ok(_) = self.stream.readable().await {
+        if (self.stream.readable().await).is_ok() {
             callback(&mut self.stream);
         }
     }
@@ -104,13 +104,13 @@ impl Client {
     where
         F: Fn(&mut UnixStream),
     {
-        if let Ok(_) = self.stream.writable().await {
+        if (self.stream.writable().await).is_ok() {
             callback(&mut self.stream);
         }
     }
 
     pub async fn read_event(&self) -> ClientResult<Event> {
-        if let Ok(_) = self.stream.readable().await {
+        if (self.stream.readable().await).is_ok() {
             debug!(target: "DAEMON_CORE_CLIENT", "Can read from socket.");
 
             let mut buf = [0; FRAME_SIZE];
@@ -141,7 +141,7 @@ impl Client {
     }
 
     pub async fn send_event(&self, event: impl AsRef<Event>) -> ClientResult<()> {
-        if let Ok(_) = self.stream.writable().await {
+        if (self.stream.writable().await).is_ok() {
             debug!(target: "DAEMON_CORE_CLIENT", "Can write to socket.");
 
             let frame_sequence: FrameSequence = event.as_ref().into();

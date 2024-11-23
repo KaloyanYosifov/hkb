@@ -49,12 +49,9 @@ async fn connect_to_server(mut rx: tokio::sync::mpsc::Receiver<FrameEvent>) {
     loop {
         tokio::select! {
             _ = alternate_interval.tick() => {
-                match client.flush().await {
-                    Err(ClientError::ConnectionClosed(e)) => {
-                        debug!(target: "CLIENT", "Server disconnected: {e:?}");
-                        break;
-                    }
-                    _ => {}
+                if let Err(ClientError::ConnectionClosed(e)) = client.flush().await {
+                    debug!(target: "CLIENT", "Server disconnected: {e:?}");
+                    break;
                 };
             }
 
@@ -123,17 +120,14 @@ async fn main() -> RenderResult {
     while !should_quit {
         while event::poll(Duration::ZERO).unwrap() {
             if let Ok(event) = event::read() {
-                match event {
-                    Event::Key(event) => match event.code {
-                        KeyCode::Char(c) => {
-                            should_quit =
-                                c == 'c' && event.modifiers.contains(event::KeyModifiers::CONTROL)
-                        }
-                        KeyCode::Esc => app_state::set_editing(false),
-                        _ => {}
-                    },
+                if let Event::Key(event) = event { match event.code {
+                    KeyCode::Char(c) => {
+                        should_quit =
+                            c == 'c' && event.modifiers.contains(event::KeyModifiers::CONTROL)
+                    }
+                    KeyCode::Esc => app_state::set_editing(false),
                     _ => {}
-                }
+                } }
 
                 events::push(event);
             }

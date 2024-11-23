@@ -5,7 +5,8 @@ pub use traits::*;
 mod structs;
 mod traits;
 
-use crate::data_structures::{MinHeap, Node};
+use crate::data_structures::binary_tree::Node;
+use crate::data_structures::min_heap::MinHeap;
 
 pub type HuffmanNode = Node<HuffmanValue>;
 
@@ -16,7 +17,7 @@ impl Huffman {
         let mut huffman_values: Vec<HuffmanValue> = Vec::with_capacity(text.len() / 2);
         let mut occurance_map: HashMap<char, usize> = HashMap::with_capacity(text.len() / 2);
 
-        for c in text.chars().into_iter() {
+        for c in text.chars() {
             let index = occurance_map
                 .entry(c)
                 .or_insert_with(|| huffman_values.len() + 1);
@@ -60,7 +61,7 @@ impl Huffman {
         let root = priority_queue.pop().unwrap();
 
         let mut binary = Vec::with_capacity(text.len());
-        for char in text.chars().into_iter() {
+        for char in text.chars() {
             binary.push(root.to_binary(char).unwrap());
         }
 

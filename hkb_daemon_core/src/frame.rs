@@ -17,19 +17,19 @@ pub enum Event {
 
 impl AsRef<Event> for Event {
     fn as_ref(&self) -> &Event {
-        &self
+        self
     }
 }
 
-impl Into<FrameSequence> for &Event {
-    fn into(self) -> FrameSequence {
-        Frame::from_event(self)
+impl From<&Event> for FrameSequence {
+    fn from(val: &Event) -> Self {
+        Frame::from_event(val)
     }
 }
 
-impl Into<FrameSequence> for Event {
-    fn into(self) -> FrameSequence {
-        (&self).into()
+impl From<Event> for FrameSequence {
+    fn from(val: Event) -> Self {
+        (&val).into()
     }
 }
 
@@ -47,20 +47,18 @@ pub struct Frame {
 impl Frame {
     fn from_string(data: impl AsRef<str>) -> FrameSequence {
         let str = data.as_ref().as_bytes();
-        let capacity = str.len().checked_div(FRAME_DATA_SIZE as usize).unwrap_or(0) + 1;
+        let capacity = str.len().checked_div(FRAME_DATA_SIZE).unwrap_or(0) + 1;
         let mut sequence: Vec<Frame> = Vec::with_capacity(capacity);
 
         for i in 1..=capacity {
-            let start = (FRAME_DATA_SIZE as usize) * (i - 1);
-            let end = std::cmp::min(str.len(), start + FRAME_DATA_SIZE as usize);
+            let start = FRAME_DATA_SIZE * (i - 1);
+            let end = std::cmp::min(str.len(), start + FRAME_DATA_SIZE);
             let data = &str[start..end];
             let data_len = data.len();
-            let mut frame_data = [0; FRAME_DATA_SIZE as usize];
+            let mut frame_data = [0; FRAME_DATA_SIZE];
 
             // copy the bytes to put in frame
-            for i in 0..data_len {
-                frame_data[i] = data[i];
-            }
+            frame_data[..data_len].copy_from_slice(&data[..data_len]);
 
             let frame = Frame {
                 metadata: FrameMetadata {
@@ -163,11 +161,11 @@ mod tests {
         let str = std::fs::read_to_string(Path::new("./tests/fixtures/big_file.txt")).unwrap();
         let mut end = 0;
         let frames = Frame::from_string(&str);
-        let expected_total_frames = ((str.len() / FRAME_DATA_SIZE as usize) + 1) as u8;
+        let expected_total_frames = ((str.len() / FRAME_DATA_SIZE) + 1) as u8;
 
         for (i, frame) in frames.iter().enumerate() {
-            let start = (FRAME_DATA_SIZE as usize) * i;
-            end = std::cmp::min(str.len(), start + FRAME_DATA_SIZE as usize);
+            let start = FRAME_DATA_SIZE * i;
+            end = std::cmp::min(str.len(), start + FRAME_DATA_SIZE);
             let part = &str[start..end];
 
             assert_eq!(part.len() as u16, frame.size());

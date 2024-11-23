@@ -37,7 +37,7 @@ impl Component for Navigation {
                 self.selected_tab = 0;
             }
 
-            app_state::set_view(self.views[self.selected_tab].clone());
+            app_state::set_view(self.views[self.selected_tab]);
         }
 
         let block = Block::new().style(Style::default().bg(Color::Black));

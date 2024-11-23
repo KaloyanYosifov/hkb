@@ -7,7 +7,7 @@ client:
 	cargo run hkb-client
 
 lint:
-	cargo clippy -- -D warnings -A clippy::let_unit_value
+	cargo clippy -- -D warnings -A clippy::let_unit_value -A clippy::only-used-in-recursion -A clippy::comparison_chain
 
 format:
 	cargo clippy --allow-dirty --allow-staged --fix

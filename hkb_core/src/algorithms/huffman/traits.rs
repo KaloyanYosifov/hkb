@@ -1,6 +1,6 @@
 use std::collections::VecDeque;
 
-use crate::data_structures::NodeRef;
+use crate::data_structures::binary_tree::NodeRef;
 
 use super::{HuffmanBinaryValue, HuffmanNode, HuffmanValue};
 
@@ -43,6 +43,7 @@ fn traverse_node<T, F: Fn(HuffmanBinaryValue, &HuffmanNode) -> Option<T>>(
     None
 }
 
+#[allow(clippy::wrong_self_convention)]
 pub trait HuffmanNodeTraverser {
     fn to_binary(&self, c: char) -> Option<HuffmanBinaryValue>;
     fn from_binary(&self, binary_encoded: HuffmanBinaryValue) -> Option<char>;
@@ -54,7 +55,7 @@ impl HuffmanNodeTraverser for HuffmanNode {
     fn to_binary(&self, c: char) -> Option<HuffmanBinaryValue> {
         traverse_node(self, |binary, node| {
             if Some(c) == node.val.char {
-                return Some(binary);
+                Some(binary)
             } else {
                 None
             }
@@ -64,7 +65,7 @@ impl HuffmanNodeTraverser for HuffmanNode {
     fn from_binary(&self, binary_encoded: HuffmanBinaryValue) -> Option<char> {
         traverse_node(self, move |binary, node| {
             if binary_encoded == binary && node.val.char.is_some() {
-                return node.val.char;
+                node.val.char
             } else {
                 None
             }
@@ -100,7 +101,7 @@ mod tests {
 
         assert_eq!(0, node.to_binary('a').unwrap());
         assert_eq!(1, node.to_binary('b').unwrap());
-        assert!(matches!(node.to_binary('c'), None));
+        assert!(node.to_binary('c').is_none());
     }
 
     #[test]
@@ -130,10 +131,9 @@ mod tests {
             node.from_binary(HuffmanBinaryValue::from_string("1"))
                 .unwrap()
         );
-        assert!(matches!(
-            node.from_binary(HuffmanBinaryValue::from_string("01")),
-            None
-        ));
+        assert!(node
+            .from_binary(HuffmanBinaryValue::from_string("01"))
+            .is_none());
     }
 
     #[test]

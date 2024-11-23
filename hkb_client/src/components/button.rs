@@ -11,18 +11,10 @@ use crate::utils::centered_layout;
 
 use super::StatefulComponent;
 
+#[derive(Default)]
 pub struct ButtonState {
     clicked: bool,
     focused: bool,
-}
-
-impl Default for ButtonState {
-    fn default() -> Self {
-        Self {
-            clicked: false,
-            focused: false,
-        }
-    }
 }
 
 impl ButtonState {
@@ -30,6 +22,7 @@ impl ButtonState {
         self.clicked
     }
 
+    #[allow(dead_code)]
     pub fn click(&mut self) {
         self.clicked = true;
     }

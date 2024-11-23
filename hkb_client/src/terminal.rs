@@ -56,6 +56,7 @@ pub fn set_cursor_to_default() {
         .expect("Should have been able to set cursor!");
 }
 
+#[allow(dead_code)]
 pub fn size() -> (u16, u16) {
     crossterminal::size().unwrap()
 }

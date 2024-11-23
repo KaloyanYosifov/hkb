@@ -1,5 +1,5 @@
 use chrono::{Datelike, NaiveDateTime, TimeDelta};
-use std::time::Duration as STDDuration;
+use std::{fmt::Display, time::Duration as STDDuration};
 use thiserror::Error as ThisError;
 
 static SECONDS_PER_MINUTE: u64 = 60;
@@ -43,7 +43,7 @@ impl Duration {
     }
 
     pub fn get_value(&self) -> DateUnit {
-        match self {
+        *match self {
             Duration::Minute(v) => v,
             Duration::Hour(v) => v,
             Duration::Day(v) => v,
@@ -51,20 +51,21 @@ impl Duration {
             Duration::Month(v) => v,
             Duration::Year(v) => v,
         }
-        .clone()
     }
 }
 
-impl ToString for Duration {
-    fn to_string(&self) -> String {
-        match self {
+impl Display for Duration {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let value = match self {
             Duration::Minute(v) => format!("Minute-{v}"),
             Duration::Hour(v) => format!("Hour-{v}"),
             Duration::Day(v) => format!("Day-{v}"),
             Duration::Week(v) => format!("Week-{v}"),
             Duration::Month(v) => format!("Month-{v}"),
             Duration::Year(v) => format!("Year-{v}"),
-        }
+        };
+
+        write!(f, "{}", value)
     }
 }
 
@@ -95,7 +96,7 @@ impl std::ops::Add<&Duration> for NaiveDateTime {
                     .with_year(self.year() + years_to_add)
                     .unwrap_or_else(|| self.with_year(0).unwrap());
 
-                new_month = new_month % MONTHS_IN_A_YEAR;
+                new_month %= MONTHS_IN_A_YEAR;
 
                 if new_month == 0 {
                     new_month = MONTHS_IN_A_YEAR;
@@ -144,7 +145,7 @@ impl std::ops::Sub<&Duration> for NaiveDateTime {
                 let mut years_to_subtract = 1;
 
                 while new_month > MONTHS_IN_A_YEAR {
-                    new_month = new_month.checked_sub(MONTHS_IN_A_YEAR).unwrap_or(0);
+                    new_month = new_month.saturating_sub(MONTHS_IN_A_YEAR);
                     years_to_subtract += 1;
                 }
 
@@ -160,7 +161,7 @@ impl std::ops::Sub<&Duration> for NaiveDateTime {
                     .unwrap_or_else(|| new_date.with_month(1).unwrap())
             }
             Duration::Year(v) => {
-                let year = (self.year() as u32).checked_sub(*v).unwrap_or(0);
+                let year = (self.year() as u32).saturating_sub(*v);
 
                 self.with_year(year as i32)
                     .unwrap_or_else(|| self.with_year(0).unwrap())
@@ -192,7 +193,7 @@ pub trait HumanizedDuration {
 impl HumanizedDuration for STDDuration {
     fn to_human_string(&self) -> String {
         let mut seconds = self.as_secs();
-        let unit_suffix = vec!["days", "hours", "minutes"];
+        let unit_suffix = ["days", "hours", "minutes"];
 
         vec![SECONDS_PER_DAY, SECONDS_PER_HOUR, SECONDS_PER_MINUTE]
             .into_iter()
@@ -202,7 +203,7 @@ impl HumanizedDuration for STDDuration {
             .map(|(i, x)| {
                 let dur = seconds / x;
 
-                if dur <= 0 {
+                if dur == u64::MIN {
                     return "".to_string();
                 }
 
@@ -211,7 +212,7 @@ impl HumanizedDuration for STDDuration {
                 let unit_suffix = unit_suffix[i];
                 let suffix = {
                     if dur >= 2 {
-                        &unit_suffix
+                        unit_suffix
                     } else {
                         &unit_suffix[0..unit_suffix.len() - 1]
                     }
@@ -219,7 +220,7 @@ impl HumanizedDuration for STDDuration {
 
                 format!("{} {}", dur, suffix)
             })
-            .filter(|x| x != "")
+            .filter(|x| !x.is_empty())
             .collect::<Vec<String>>()
             .join(" ")
     }

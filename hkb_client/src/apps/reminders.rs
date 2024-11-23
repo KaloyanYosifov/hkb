@@ -21,11 +21,11 @@ enum View {
     Create,
 }
 
-impl Into<Box<dyn RemindersView>> for View {
-    fn into(self) -> Box<dyn RemindersView> {
-        match self {
-            Self::List => Box::new(RemindersList::default()),
-            Self::Create => Box::new(RemindersCreate::default()),
+impl From<View> for Box<dyn RemindersView> {
+    fn from(val: View) -> Self {
+        match val {
+            View::List => Box::new(RemindersList::default()),
+            View::Create => Box::new(RemindersCreate::default()),
         }
     }
 }
@@ -51,8 +51,8 @@ impl RemindersApp {
 
 impl RemindersApp {
     pub fn render(&mut self, frame: &mut Frame, area: Rect) {
-        match self.current_view.update() {
-            Some(m) => match m {
+        if let Some(m) = self.current_view.update() {
+            match m {
                 Message::ChangeView(view) => {
                     self.current_view = view.into();
                     self.current_view.init();
@@ -72,7 +72,7 @@ impl RemindersApp {
                     info!(target: "CLIENT_REMINDERS", "Deleting a reminder.");
                     debug!(target: "CLIENT_REMINDERS", "Received a message to delete a reminder with id {reminder_id}");
 
-                    if let Ok(_) = services::reminders::delete_reminder(reminder_id) {
+                    if services::reminders::delete_reminder(reminder_id).is_ok() {
                         crate::singleton::send_server_msg(FrameEvent::ReminderDeleted(reminder_id));
 
                         // reinitialize view, as we just deleted a reminder
@@ -81,8 +81,7 @@ impl RemindersApp {
                         error!(target: "CLIENT_REMINDERS", "Failed to delete a reminder with id {reminder_id}!");
                     }
                 }
-            },
-            _ => {}
+            }
         };
 
         self.current_view.render(frame, area);

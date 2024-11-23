@@ -55,13 +55,10 @@ pub fn init_database(url: &str, migrations: Vec<EmbeddedMigrations>) -> Result<(
     for migration in migrations {
         debug!(target: "CORE_DATABASE", "Starting migration {i}.");
 
-        match connection.run_pending_migrations(migration) {
-            Err(e) => {
-                error!(target: "CORE_DATABASE", "Failed to run migration: {e}");
+        if let Err(e) = connection.run_pending_migrations(migration) {
+            error!(target: "CORE_DATABASE", "Failed to run migration: {e}");
 
-                return Err(DatabaseError::FailedToRunMigrations);
-            }
-            _ => {}
+            return Err(DatabaseError::FailedToRunMigrations);
         };
 
         debug!(target: "CORE_DATABASE", "Migration {i} finished !");

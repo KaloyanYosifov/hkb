@@ -1,5 +1,4 @@
 use crossterm::event::{Event, KeyCode};
-use hkb_core::logger::debug;
 use parking_lot::{MappedMutexGuard, Mutex, MutexGuard};
 use std::time::Instant;
 
@@ -80,31 +79,28 @@ impl EventHandler {
 }
 
 impl EventHandler {
+    #[allow(dead_code)]
     pub fn all(&self) -> Vec<&Event> {
         self.events.iter().collect()
     }
 
     pub fn push(&mut self, event: Event) {
-        match event {
-            Event::Key(e) => match e.code {
-                KeyCode::Char(c) => {
-                    // if 300 ms have passed, we assume we had a key release
-                    // This is a hacky way of figuring out when a key has been released
-                    if self.key_release_delay.elapsed().as_millis() >= 300 {
-                        self.times_pressed += 1;
-                    }
-
-                    if let Some(prev) = self.previous_key {
-                        if prev != c {
-                            self.times_pressed = 1;
-                        }
-                    }
-
-                    self.previous_key = Some(c);
+        if let Event::Key(e) = event {
+            if let KeyCode::Char(c) = e.code {
+                // if 300 ms have passed, we assume we had a key release
+                // This is a hacky way of figuring out when a key has been released
+                if self.key_release_delay.elapsed().as_millis() >= 300 {
+                    self.times_pressed += 1;
                 }
-                _ => {}
-            },
-            _ => {}
+
+                if let Some(prev) = self.previous_key {
+                    if prev != c {
+                        self.times_pressed = 1;
+                    }
+                }
+
+                self.previous_key = Some(c);
+            }
         };
 
         self.events.push(event);
@@ -160,6 +156,7 @@ pub fn consume_if<T: Fn(&Event) -> bool>(callback: T) -> Vec<Event> {
     EventHandler::get_global_handler().consume_if(callback)
 }
 
+#[allow(dead_code)]
 pub fn consume(index: usize) -> Option<Event> {
     EventHandler::get_global_handler().consume(index)
 }

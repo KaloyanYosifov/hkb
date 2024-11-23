@@ -61,6 +61,7 @@ impl BoundedValue {
         self.val = self.min_val;
     }
 
+    #[allow(dead_code)]
     pub fn set_to_max(&mut self) {
         self.val = self.max_val;
     }
@@ -69,6 +70,7 @@ impl BoundedValue {
         self.val
     }
 
+    #[allow(dead_code)]
     pub fn get_max_val(&self) -> BoundValueType {
         self.max_val
     }
@@ -172,19 +174,21 @@ impl PartialEq<BoundValueType> for BoundedValue {
 
 impl Eq for BoundedValue {}
 
+impl Ord for BoundedValue {
+    fn cmp(&self, other: &Self) -> Ordering {
+        if self.val > other.val {
+            std::cmp::Ordering::Greater
+        } else if self.val < other.val {
+            std::cmp::Ordering::Less
+        } else {
+            std::cmp::Ordering::Equal
+        }
+    }
+}
+
 impl PartialOrd for BoundedValue {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        let order = {
-            if self.val > other.val {
-                std::cmp::Ordering::Greater
-            } else if self.val < other.val {
-                std::cmp::Ordering::Less
-            } else {
-                std::cmp::Ordering::Equal
-            }
-        };
-
-        Some(order)
+        Some(self.cmp(other))
     }
 }
 
@@ -201,11 +205,5 @@ impl PartialOrd<BoundValueType> for BoundedValue {
         };
 
         Some(order)
-    }
-}
-
-impl Ord for BoundedValue {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        self.partial_cmp(other).unwrap()
     }
 }

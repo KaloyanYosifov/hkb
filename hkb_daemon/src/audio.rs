@@ -3,6 +3,7 @@ use parking_lot::{MappedMutexGuard, Mutex, MutexGuard};
 use thiserror::Error as ThisError;
 use tokio::sync::mpsc;
 
+#[allow(clippy::enum_variant_names)]
 #[derive(ThisError, Debug)]
 pub enum AudioError {
     #[error("No msg channel found!")]
@@ -25,16 +26,9 @@ static GLOBAL_AUDIO_HANDLE: Mutex<Option<AudioHandle>> = parking_lot::const_mute
 
 type AudioMessageSender = mpsc::Sender<String>;
 
+#[derive(Default)]
 struct AudioHandle {
     audio_msg_sender: Option<AudioMessageSender>,
-}
-
-impl Default for AudioHandle {
-    fn default() -> Self {
-        Self {
-            audio_msg_sender: None,
-        }
-    }
 }
 
 impl AudioHandle {
@@ -54,7 +48,7 @@ impl AudioHandle {
 
             let tx = sender.clone();
 
-            if let Ok(_) = tx.send(path).await {
+            if (tx.send(path).await).is_ok() {
                 debug!(target: "DAEMON_AUDIO", "MSG sent");
 
                 Ok(())

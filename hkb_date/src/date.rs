@@ -1,7 +1,7 @@
 use crate::duration::*;
 use chrono::{Datelike, Local, NaiveDate, NaiveDateTime, NaiveTime, ParseError, Timelike, Utc};
 use serde::{Deserialize, Serialize};
-use std::time::Duration as STDDuration;
+use std::{fmt::Display, time::Duration as STDDuration};
 use thiserror::Error as ThisError;
 
 #[derive(ThisError, Debug)]
@@ -121,9 +121,9 @@ impl SimpleDate {
 
     pub fn set_ymd(&mut self, year: i32, month: DateUnit, date: DateUnit) -> DateResult<()> {
         self.date = NaiveDate::from_ymd_opt(year, month, date)
-            .ok_or_else(|| DateError::FailedToSetTime)?
+            .ok_or(DateError::FailedToSetTime)?
             .and_hms_opt(self.date.hour(), self.date.minute(), self.date.second())
-            .ok_or_else(|| DateError::FailedToSetTime)?;
+            .ok_or(DateError::FailedToSetTime)?;
 
         Ok(())
     }
@@ -134,8 +134,8 @@ impl SimpleDate {
         minute: DateUnit,
         second: DateUnit,
     ) -> DateResult<()> {
-        let time = NaiveTime::from_hms_opt(hour, minute, second)
-            .ok_or_else(|| DateError::FailedToSetTime)?;
+        let time =
+            NaiveTime::from_hms_opt(hour, minute, second).ok_or(DateError::FailedToSetTime)?;
 
         self.date = NaiveDateTime::new(self.date.date(), time);
 
@@ -152,9 +152,9 @@ impl SimpleDate {
         second: DateUnit,
     ) -> DateResult<()> {
         self.date = NaiveDate::from_ymd_opt(year, month, date)
-            .ok_or_else(|| DateError::FailedToSetTime)?
+            .ok_or(DateError::FailedToSetTime)?
             .and_hms_opt(hour, minute, second)
-            .ok_or_else(|| DateError::FailedToSetTime)?;
+            .ok_or(DateError::FailedToSetTime)?;
 
         Ok(())
     }
@@ -212,21 +212,26 @@ impl SimpleDate {
     }
 
     #[cfg(not(feature = "chrono"))]
+    #[allow(clippy::wrong_self_convention)]
     pub(crate) fn to_chrono_date(&self) -> chrono::NaiveDateTime {
-        self.date.clone()
+        self.date
     }
 
     #[cfg(feature = "chrono")]
+    #[allow(clippy::wrong_self_convention)]
     pub fn to_chrono_date(&self) -> chrono::NaiveDateTime {
         self.date.clone()
     }
 }
 
-impl ToString for SimpleDate {
-    fn to_string(&self) -> String {
-        self.date
+impl Display for SimpleDate {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let value = self
+            .date
             .and_utc()
-            .to_rfc3339_opts(chrono::SecondsFormat::Secs, true)
+            .to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
+
+        write!(f, "{}", value)
     }
 }
 

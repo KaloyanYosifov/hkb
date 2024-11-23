@@ -48,7 +48,7 @@ type DateParsingResult = Result<SimpleDate, DateParsingError>;
 
 fn ctoi(char: char) -> u8 {
     // 48 is the ascii code of 0
-    return (char as u8) - 48;
+    (char as u8) - 48
 }
 
 #[derive(Parser)]
@@ -74,7 +74,7 @@ impl HumanDateParser {
             if let Some(at_sentence) = possible_at_sentence {
                 self.parse_at_sentence(at_sentence)?
             } else {
-                self.start_date.clone()
+                self.start_date
             }
         };
 
@@ -97,7 +97,7 @@ impl HumanDateParser {
 
         let duration = pair.as_span().as_str();
         let duration = Duration::from_string(duration, duration_value as u32)?;
-        let date = self.start_date.clone().add_duration(duration)?;
+        let date = self.start_date.add_duration(duration)?;
 
         Ok(date)
     }
@@ -128,7 +128,7 @@ impl HumanDateParser {
         // data structure
         let (day, month) = {
             let day = inner.next().unwrap().as_str();
-            let day = (&day[0..day.len() - 2]).parse::<u32>().unwrap();
+            let day = day[0..day.len() - 2].parse::<u32>().unwrap();
             let month = inner.next().unwrap().as_str();
             let month = (MONTHS.iter().position(|&m| m == month).unwrap() + 1) as u32;
 
@@ -157,7 +157,7 @@ impl HumanDateParser {
                 if let Some(pair) = inner.next() {
                     self.parse_on_sentence(pair)?
                 } else {
-                    self.start_date.clone()
+                    self.start_date
                 }
             };
 
@@ -191,8 +191,8 @@ impl HumanDateParser {
                     .add_duration(Duration::Day(days_since_weekday))
                     .unwrap())
             }
-            "week" => Ok(start_date.clone().add_duration(Duration::Week(1)).unwrap()),
-            "month" => Ok(start_date.clone().add_duration(Duration::Month(1)).unwrap()),
+            "week" => Ok(start_date.add_duration(Duration::Week(1)).unwrap()),
+            "month" => Ok(start_date.add_duration(Duration::Month(1)).unwrap()),
             _ => Err(DateParsingError::FailedToParseInput(
                 "Invalid day option!".to_string(),
             )),
