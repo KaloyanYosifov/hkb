@@ -5,6 +5,10 @@ ROOT_DIR=$SCRIPT_DIR/../
 HOOKS_DIR=$ROOT_DIR/.git-hooks
 GIT_HOOKS_DIR=$ROOT_DIR/.git/hooks
 
+if ! [ -d $GIT_HOOKS_DIR ]; then
+    exit 0
+fi
+
 hooks="$(ls $HOOKS_DIR)"
 
 function install_hook {
