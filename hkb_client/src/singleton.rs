@@ -7,17 +7,11 @@ static GLOBAL_SINGLETON: Mutex<Option<Singleton>> = parking_lot::const_mutex(Non
 type ServerMsgSender = tokio::sync::mpsc::Sender<FrameEvent>;
 
 #[derive(Debug)]
+#[derive(Default)]
 pub struct Singleton {
     server_msg_sender: Option<ServerMsgSender>,
 }
 
-impl Default for Singleton {
-    fn default() -> Self {
-        Self {
-            server_msg_sender: None,
-        }
-    }
-}
 
 impl Singleton {
     fn get_global() -> MappedMutexGuard<'static, Self> {

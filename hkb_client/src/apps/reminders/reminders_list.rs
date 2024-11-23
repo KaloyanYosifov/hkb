@@ -52,7 +52,7 @@ impl RemindersList {
         format!("{} - {}", reminder.note, duration)
     }
 
-    fn create_reminder_list<'a>(&self, reminders: &Vec<ReminderData>, title: &'a str) -> List<'a> {
+    fn create_reminder_list<'a>(&self, reminders: &[ReminderData], title: &'a str) -> List<'a> {
         let notes = reminders
             .iter()
             .map(|reminder| self.format_reminder(reminder))
@@ -103,17 +103,15 @@ impl RemindersView for RemindersList {
             start_date: SimpleDate::local().start_of_day().unwrap(),
         }];
         self.today_reminders =
-            reminders::fetch_reminders(Some(today_reminders_query_options)).unwrap_or(vec![]);
+            reminders::fetch_reminders(Some(today_reminders_query_options)).unwrap_or_default();
 
         let rest_of_reminders_query_options =
             vec![ReminderQueryOptions::RemindAtGe { date: end_date }];
         self.upcoming_reminders =
-            reminders::fetch_reminders(Some(rest_of_reminders_query_options)).unwrap_or(vec![]);
+            reminders::fetch_reminders(Some(rest_of_reminders_query_options)).unwrap_or_default();
 
         self.selected.set_max(
-            (self.today_reminders.len() + self.upcoming_reminders.len())
-                .checked_sub(1)
-                .unwrap_or(0),
+            (self.today_reminders.len() + self.upcoming_reminders.len()).saturating_sub(1),
         );
     }
 
@@ -125,7 +123,7 @@ impl RemindersView for RemindersList {
         if (events::has_key_event!(KeyCode::Backspace)
             || events::has_key_event!(KeyCode::Char(c) if c == 'd'))
             && events::is_pressed_at_least('d', 2)
-            && (self.today_reminders.len() > 0 || self.upcoming_reminders.len() > 0)
+            && (!self.today_reminders.is_empty() || !self.upcoming_reminders.is_empty())
         {
             events::reset_key_press();
 

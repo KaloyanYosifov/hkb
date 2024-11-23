@@ -1,4 +1,5 @@
 use std::collections::HashSet;
+use std::fmt::Display;
 
 use log::LevelFilter;
 pub use log::{debug, error, info, log, trace, warn};
@@ -16,13 +17,15 @@ pub enum AppenderType {
     STDOUT,
 }
 
-impl ToString for AppenderType {
-    fn to_string(&self) -> String {
-        match self {
+impl Display for AppenderType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let value = match self {
             AppenderType::FILE => "file",
             AppenderType::STDOUT => "stdout",
         }
-        .to_owned()
+        .to_owned();
+
+        write!(f, "{}", value)
     }
 }
 

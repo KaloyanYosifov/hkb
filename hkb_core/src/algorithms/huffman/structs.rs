@@ -1,4 +1,6 @@
-#[derive(Eq, Ord, Clone, Copy, Debug)]
+use std::fmt::Display;
+
+#[derive(Eq, Clone, Copy, Debug)]
 pub struct HuffmanValue {
     pub char: Option<char>,
     pub occurance: u64,
@@ -10,23 +12,25 @@ impl PartialEq for HuffmanValue {
     }
 }
 
-impl PartialOrd for HuffmanValue {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        let val = {
-            if self.occurance > other.occurance {
-                std::cmp::Ordering::Greater
-            } else if self.occurance < other.occurance {
-                std::cmp::Ordering::Less
-            } else {
-                std::cmp::Ordering::Equal
-            }
-        };
-
-        Some(val)
+impl Ord for HuffmanValue {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        if self.occurance > other.occurance {
+            std::cmp::Ordering::Greater
+        } else if self.occurance < other.occurance {
+            std::cmp::Ordering::Less
+        } else {
+            std::cmp::Ordering::Equal
+        }
     }
 }
 
-#[derive(Eq, Ord, Clone, Copy, Debug)]
+impl PartialOrd for HuffmanValue {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+#[derive(Eq, Clone, Copy, Debug)]
 pub struct HuffmanBinaryValue {
     pub(crate) val: u32,
     pub(crate) max_bits: u32,
@@ -63,6 +67,7 @@ impl HuffmanBinaryValue {
         format!("{:0width$b}", self.val, width = self.max_bits as usize)
     }
 
+    #[allow(clippy::inherent_to_string)]
     pub fn to_string(&self) -> String {
         format!("{:032b}", self.val)
     }
@@ -86,25 +91,27 @@ impl PartialEq<HuffmanBinaryValue> for u32 {
     }
 }
 
-impl PartialOrd for HuffmanBinaryValue {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        let order = {
-            if self.val > other.val {
-                std::cmp::Ordering::Greater
-            } else if self.val < other.val {
-                std::cmp::Ordering::Less
-            } else {
-                std::cmp::Ordering::Equal
-            }
-        };
-
-        Some(order)
+impl Ord for HuffmanBinaryValue {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        if self.val > other.val {
+            std::cmp::Ordering::Greater
+        } else if self.val < other.val {
+            std::cmp::Ordering::Less
+        } else {
+            std::cmp::Ordering::Equal
+        }
     }
 }
 
-impl Into<HuffmanBinaryValue> for u32 {
-    fn into(self) -> HuffmanBinaryValue {
-        HuffmanBinaryValue::with_value(self)
+impl PartialOrd for HuffmanBinaryValue {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl From<u32> for HuffmanBinaryValue {
+    fn from(val: u32) -> Self {
+        HuffmanBinaryValue::with_value(val)
     }
 }
 
@@ -141,15 +148,15 @@ impl HuffmanBinary {
     }
 }
 
-impl ToString for HuffmanBinary {
-    fn to_string(&self) -> String {
+impl Display for HuffmanBinary {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut output = String::with_capacity(self.binary.len());
 
         for value in self.binary.iter() {
             output.push_str(value.to_string().as_str());
         }
 
-        output
+        write!(f, "{}", output)
     }
 }
 

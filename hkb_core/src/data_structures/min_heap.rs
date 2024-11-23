@@ -27,6 +27,12 @@ pub struct MinHeap<T: Constraints> {
     values: Vec<T>,
 }
 
+impl<T: Constraints> Default for MinHeap<T> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<T: Constraints> MinHeap<T> {
     pub fn new() -> Self {
         Self::with_capacity(32)
@@ -47,7 +53,7 @@ impl<T: Constraints> MinHeap<T> {
     }
 
     pub fn pop(&mut self) -> Option<T> {
-        if self.values.len() == 0 {
+        if self.values.is_empty() {
             None
         } else if self.values.len() == 1 {
             self.values.pop()
@@ -63,7 +69,7 @@ impl<T: Constraints> MinHeap<T> {
     }
 
     pub fn has_element(&self) -> bool {
-        self.values.len() > 0
+        !self.values.is_empty()
     }
 
     pub fn size(&self) -> usize {
@@ -173,7 +179,7 @@ mod tests {
                 min_heap.insert(val);
             }
 
-            if let Some(&min_val) = min_heap.values.get(0) {
+            if let Some(&min_val) = min_heap.values.first() {
                 assert_eq!(min_val, *values.iter().min().unwrap());
             } else {
                 assert!(values.is_empty());
@@ -199,7 +205,7 @@ mod tests {
                 index += 1;
             }
 
-            assert!(matches!(min_heap.pop(), None));
+            assert!(min_heap.pop().is_none());
         }
     }
 }

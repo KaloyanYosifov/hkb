@@ -1,12 +1,12 @@
 use std::{cell::RefCell, rc::Rc};
 
-trait Constraints: PartialEq + Eq + PartialOrd + Ord {}
+pub trait Constraints: PartialEq + Eq + PartialOrd + Ord {}
 
 impl<T: PartialEq + Eq + PartialOrd + Ord> Constraints for T {}
 
 pub type NodeRef<T> = Rc<RefCell<Node<T>>>;
 
-#[derive(Ord, Eq, Debug)]
+#[derive(Eq, Debug)]
 pub struct Node<T: PartialEq + Eq + PartialOrd + Ord> {
     pub val: T,
     left: Option<NodeRef<T>>,
@@ -19,38 +19,28 @@ impl<T: Constraints> PartialEq for Node<T> {
     }
 }
 
+impl<T: Constraints> Ord for Node<T> {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        if self.val > other.val {
+            std::cmp::Ordering::Greater
+        } else if self.val < other.val {
+            std::cmp::Ordering::Less
+        } else {
+            std::cmp::Ordering::Equal
+        }
+    }
+}
+
 impl<T: Constraints> PartialOrd for Node<T> {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        let val = {
-            if self.val > other.val {
-                std::cmp::Ordering::Greater
-            } else if self.val < other.val {
-                std::cmp::Ordering::Less
-            } else {
-                std::cmp::Ordering::Equal
-            }
-        };
-
-        Some(val)
+        Some(self.cmp(other))
     }
 }
 
 impl<T: Constraints> Node<T> {
     pub fn new(val: T, left_val: Option<T>, right_val: Option<T>) -> Self {
-        let left = {
-            if let Some(v) = left_val {
-                Some(Rc::new(RefCell::new(Node::with_value(v))))
-            } else {
-                None
-            }
-        };
-        let right = {
-            if let Some(v) = right_val {
-                Some(Rc::new(RefCell::new(Node::with_value(v))))
-            } else {
-                None
-            }
-        };
+        let left = { left_val.map(|v| Rc::new(RefCell::new(Node::with_value(v)))) };
+        let right = { right_val.map(|v| Rc::new(RefCell::new(Node::with_value(v)))) };
 
         Self { val, left, right }
     }
@@ -71,20 +61,12 @@ impl<T: Constraints> Node<T> {
         }
     }
 
-    pub fn get_left<'a>(&self) -> Option<NodeRef<T>> {
-        if let Some(node) = self.left.as_ref() {
-            Some(node.clone())
-        } else {
-            None
-        }
+    pub fn get_left(&self) -> Option<NodeRef<T>> {
+        self.left.as_ref().map(|node| node.clone())
     }
 
-    pub fn get_right<'a>(&self) -> Option<NodeRef<T>> {
-        if let Some(node) = self.right.as_ref() {
-            Some(node.clone())
-        } else {
-            None
-        }
+    pub fn get_right(&self) -> Option<NodeRef<T>> {
+        self.right.as_ref().map(|node| node.clone())
     }
 
     pub fn height(&self) -> usize {
@@ -114,8 +96,8 @@ mod tests {
         let node = Node::with_value(3);
 
         assert_eq!(3, node.val);
-        assert!(matches!(node.get_left(), None));
-        assert!(matches!(node.get_right(), None));
+        assert!(node.get_left().is_none());
+        assert!(node.get_right().is_none());
     }
 
     #[test]

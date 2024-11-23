@@ -26,7 +26,7 @@ impl<'a> Widget for Image<'a> {
         for x in 0..self.image.width() {
             for y in 0..self.image.height() {
                 let [red, green, blue] = self.image.get_pixel(x, y).to_rgb().0;
-                let rough_estimate = ((255 as f32) / (IMAGE_ALPHABET.len() as f32)).ceil() as u8;
+                let rough_estimate = (255_f32 / (IMAGE_ALPHABET.len() as f32)).ceil() as u8;
                 let luminance = (0.2126 * (red as f32)
                     + 0.7152 * (green as f32)
                     + 0.0722 * (blue as f32)) as u8;

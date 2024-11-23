@@ -13,43 +13,43 @@ use crate::database::{
     DatabaseResult,
 };
 
-impl Into<ReminderData> for Reminder {
-    fn into(self) -> ReminderData {
+impl From<Reminder> for ReminderData {
+    fn from(val: Reminder) -> Self {
         ReminderData {
-            id: self.id,
-            note: self.note,
-            remind_at: SimpleDate::parse_from_rfc3339(self.remind_at).unwrap(),
-            created_at: SimpleDate::parse_from_rfc3339(self.created_at).unwrap(),
+            id: val.id,
+            note: val.note,
+            remind_at: SimpleDate::parse_from_rfc3339(val.remind_at).unwrap(),
+            created_at: SimpleDate::parse_from_rfc3339(val.created_at).unwrap(),
         }
     }
 }
 
-impl Into<Reminder> for ReminderData {
-    fn into(self) -> Reminder {
+impl From<ReminderData> for Reminder {
+    fn from(val: ReminderData) -> Self {
         Reminder {
-            id: self.id,
-            note: self.note,
-            remind_at: self.remind_at.to_string(),
-            created_at: self.created_at.to_string(),
+            id: val.id,
+            note: val.note,
+            remind_at: val.remind_at.to_string(),
+            created_at: val.created_at.to_string(),
         }
     }
 }
 
-impl Into<CreateReminder> for CreateReminderData {
-    fn into(self) -> CreateReminder {
+impl From<CreateReminderData> for CreateReminder {
+    fn from(val: CreateReminderData) -> Self {
         CreateReminder {
-            note: self.note,
-            remind_at: self.remind_at.to_string(),
+            note: val.note,
+            remind_at: val.remind_at.to_string(),
             created_at: SimpleDate::local().to_string(),
         }
     }
 }
 
-impl Into<UpdateReminder> for UpdateReminderData {
-    fn into(self) -> UpdateReminder {
+impl From<UpdateReminderData> for UpdateReminder {
+    fn from(val: UpdateReminderData) -> Self {
         UpdateReminder {
-            note: self.note,
-            remind_at: self.remind_at.map(|date| date.to_string()),
+            note: val.note,
+            remind_at: val.remind_at.map(|date| date.to_string()),
         }
     }
 }
@@ -125,7 +125,7 @@ pub fn fetch_reminders(
 
         debug!(target: "CORE_REMINDERS_SERVICE", "Reminders fetched: {}", reminders.len());
 
-        Ok(reminders.into())
+        Ok(reminders)
     })
 }
 
@@ -310,11 +310,9 @@ mod tests {
     fn it_can_fetch_reminders() {
         truncate_table!();
 
-        let reminders = vec![
+        let reminders = [create_a_reminder!(),
             create_a_reminder!(),
-            create_a_reminder!(),
-            create_a_reminder!(),
-        ];
+            create_a_reminder!()];
         let fetched_reminders = fetch_reminders(None).unwrap();
 
         assert_eq!(reminders.len(), fetched_reminders.len());
@@ -340,8 +338,8 @@ mod tests {
             SimpleDate::parse_from_str("2024-04-01 08:00:00", "%Y-%m-%d %H:%M:%S").unwrap();
 
         let reminders = vec![
-            create_a_reminder!(d1.clone()),
-            create_a_reminder!(d2.clone()),
+            create_a_reminder!(d1),
+            create_a_reminder!(d2),
             create_a_reminder!(),
             create_a_reminder!(),
         ];
@@ -354,7 +352,7 @@ mod tests {
 
         assert_eq!(2, fetched_reminders.len());
 
-        assert_eq!(reminders.get(0).unwrap(), fetched_reminders.get(0).unwrap());
+        assert_eq!(reminders.first().unwrap(), fetched_reminders.first().unwrap());
         assert_eq!(reminders.get(1).unwrap(), fetched_reminders.get(1).unwrap());
 
         let start_date =
@@ -370,7 +368,7 @@ mod tests {
 
         assert_eq!(2, fetched_reminders.len());
 
-        assert_eq!(reminders.get(2).unwrap(), fetched_reminders.get(0).unwrap());
+        assert_eq!(reminders.get(2).unwrap(), fetched_reminders.first().unwrap());
         assert_eq!(reminders.get(3).unwrap(), fetched_reminders.get(1).unwrap());
     }
 

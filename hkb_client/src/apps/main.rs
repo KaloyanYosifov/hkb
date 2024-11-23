@@ -1,7 +1,7 @@
 use crate::components::Image;
 use hkb_core::logger::debug;
-use image::io::Reader as ImageReader;
 use image::DynamicImage;
+use image::ImageReader;
 use ratatui::prelude::{Frame, Rect};
 
 pub struct MainApp {

@@ -47,12 +47,9 @@ async fn process_connection(stream: UnixStream) {
     loop {
         tokio::select! {
             _ = alternate_interval.tick() => {
-                match client.flush().await {
-                    Err(ClientError::ConnectionClosed(e)) => {
-                        debug!(target: "DAEMON", "Client disconnected: {e:?}");
-                        break;
-                    }
-                    _ => {}
+                if let Err(ClientError::ConnectionClosed(e)) = client.flush().await {
+                    debug!(target: "DAEMON", "Client disconnected: {e:?}");
+                    break;
                 };
             }
 
@@ -88,14 +85,14 @@ async fn handle_reminding(already_reminded: &mut HashMap<String, Vec<i64>>) {
                 start_date,
                 end_date,
             },
-            ReminderQueryOptions::WithoutIds { ids: &reminded },
+            ReminderQueryOptions::WithoutIds { ids: reminded },
         ];
-        let reminders: Vec<ReminderData> = fetch_reminders(Some(options)).unwrap_or(vec![]);
+        let reminders: Vec<ReminderData> = fetch_reminders(Some(options)).unwrap_or_default();
 
         debug!(target: "DAEMON", "Found {} reminders to notify!", reminders.len());
 
         if !has_reminded {
-            has_reminded = reminders.len() > 0;
+            has_reminded = !reminders.is_empty();
         }
 
         for reminder in reminders {

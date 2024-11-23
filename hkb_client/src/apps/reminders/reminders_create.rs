@@ -13,6 +13,7 @@ use crate::{app_state, events, focus::Focusable};
 
 use super::{Message, RemindersView};
 
+#[derive(Default)]
 pub struct RemindersCreate {
     error_message: Option<String>,
     focused_component: usize,
@@ -20,19 +21,6 @@ pub struct RemindersCreate {
     reminder_date_input: InputState,
     submit_button: ButtonState,
     parsed_date: Option<SimpleDate>,
-}
-
-impl Default for RemindersCreate {
-    fn default() -> Self {
-        Self {
-            parsed_date: None,
-            error_message: None,
-            focused_component: 0,
-            message_input: InputState::default(),
-            reminder_date_input: InputState::default(),
-            submit_button: ButtonState::default(),
-        }
-    }
 }
 
 // Create rendering
@@ -90,9 +78,9 @@ impl RemindersCreate {
     }
 
     fn validate(&mut self) -> bool {
-        if self.message_input.buffer.len() <= 0 {
+        if self.message_input.buffer.is_empty() {
             self.error_message = Some("Title Input is required!".to_owned());
-        } else if self.reminder_date_input.buffer.len() <= 0 {
+        } else if self.reminder_date_input.buffer.is_empty() {
             self.error_message = Some("Remidner Date Input is required!".to_owned());
         } else {
             let parser = HumanDateParser::new(SimpleDate::local());
@@ -154,7 +142,7 @@ impl RemindersView for RemindersCreate {
         } else if events::has_key_event!(KeyCode::BackTab) {
             let last_focused_input = self.focused_component;
 
-            if self.focused_component <= 0 {
+            if self.focused_component == 0 {
                 self.focused_component = focusables.len() - 1;
             } else {
                 self.focused_component -= 1;

@@ -56,10 +56,8 @@ impl<'a> Input<'a> {
 impl<'a> Input<'a> {
     fn trimmed_buffer(&self, state: &'a InputState, area: &Rect) -> &str {
         let area_width = area.width as usize;
-        let offset_end = std::cmp::min(
-            state.buffer.len(),
-            (area_width as usize) + state.visible_buffer_offset,
-        );
+        let offset_end =
+            std::cmp::min(state.buffer.len(), area_width + state.visible_buffer_offset);
 
         &state.buffer[state.visible_buffer_offset..offset_end]
     }
@@ -102,12 +100,10 @@ impl<'a> Input<'a> {
             .cursor_offset
             .set_val(self.get_max_right_cursor_pos(state));
 
-        state.visible_buffer_offset = buffer_len
-            .checked_sub(state.last_render_width as usize)
-            .unwrap_or(0);
+        state.visible_buffer_offset = buffer_len.saturating_sub(state.last_render_width as usize);
     }
 
-    fn get_char_class(&self, pos: usize, chars: &Vec<char>) -> i8 {
+    fn get_char_class(&self, pos: usize, chars: &[char]) -> i8 {
         if pos >= chars.len() {
             return -1;
         }
@@ -122,7 +118,7 @@ impl<'a> Input<'a> {
     }
 
     fn go_end_of_word(&self, state: &mut InputState) {
-        if state.buffer.len() == 0 {
+        if state.buffer.is_empty() {
             return;
         }
 
@@ -142,7 +138,7 @@ impl<'a> Input<'a> {
         }
 
         state.cursor_offset.set_val(std::cmp::min(
-            current_pos.checked_sub(1).unwrap_or(0),
+            current_pos.saturating_sub(1),
             self.get_max_right_cursor_pos(state),
         ));
         let visible_current_pos = current_pos - state.visible_buffer_offset;
@@ -153,18 +149,15 @@ impl<'a> Input<'a> {
     }
 
     fn go_back_word(&self, state: &mut InputState) {
-        if state.buffer.len() == 0 {
+        if state.buffer.is_empty() {
             return;
         }
 
         let chars = state.buffer.chars().collect::<Vec<char>>();
-        let mut current_pos = self
-            .get_buffer_update_offset(state)
-            .checked_sub(1)
-            .unwrap_or(0);
+        let mut current_pos = self.get_buffer_update_offset(state).saturating_sub(1);
 
         while self.get_char_class(current_pos, &chars) == 0 {
-            current_pos = current_pos.checked_sub(1).unwrap_or(0);
+            current_pos = current_pos.saturating_sub(1);
 
             if current_pos == 0 {
                 break;
@@ -175,7 +168,7 @@ impl<'a> Input<'a> {
 
         if current_pos != 0 && char_class != -1 {
             while self.get_char_class(current_pos, &chars) == char_class {
-                current_pos = current_pos.checked_sub(1).unwrap_or(0);
+                current_pos = current_pos.saturating_sub(1);
 
                 if current_pos == 0 {
                     break;
@@ -261,16 +254,14 @@ impl<'a> Input<'a> {
     }
 
     fn on_backspace(&self, state: &mut InputState) {
-        if state.buffer.len() == 0 {
+        if state.buffer.is_empty() {
             return;
         }
 
         let offset = self.get_buffer_update_offset(state);
-        let first_part = &state.buffer[..(offset.checked_sub(1).unwrap_or(0))];
+        let first_part = &state.buffer[..offset.saturating_sub(1)];
         let second_part = &state.buffer[offset..];
-        let buffer_capacity = (first_part.len() + second_part.len())
-            .checked_sub(1)
-            .unwrap_or(0);
+        let buffer_capacity = (first_part.len() + second_part.len()).saturating_sub(1);
         let mut buffer = String::with_capacity(buffer_capacity);
 
         buffer.push_str(first_part);
