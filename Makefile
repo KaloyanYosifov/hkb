@@ -6,4 +6,16 @@ install_git_hooks:
 client:
 	cargo run hkb-client
 
+lint:
+	cargo clippy -- -D warnings -A clippy::let_unit_value
+
+format:
+	cargo clippy --allow-dirty --allow-staged --fix
+
+test:
+	cargo test
+
+build:
+	cargo build
+
 -include install_git_hooks
