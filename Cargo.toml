@@ -5,7 +5,7 @@ members = [
     "hkb_client",
     "hkb_date",
     "hkb_daemon",
-    "hkb_daemon_core",
+    "hkb_daemon_core", "hkb_cli", "hkb_cli_habit",
 ]
 
 [workspace.dependencies]
@@ -19,3 +19,4 @@ insta = { version = "1.39.0" }
 rodio = { version = "0.18.0" }
 proptest = { version = "0.9.6" }
 parking_lot = { version = "0.12.1", features = ["send_guard"] }
+clap = { version = "4.5.21" }
