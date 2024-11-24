@@ -1,0 +1,8 @@
+[package]
+name = "hkb_cli_habit"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+clap = { workspace = true }
+hkb_core = { path = "../hkb_core", version = "0.1.0" }
