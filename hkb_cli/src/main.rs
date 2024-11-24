@@ -1,4 +1,4 @@
-use clap::{Arg, ArgMatches, Command};
+use clap::Command;
 use hkb_cli_habit::CommandPlugin as HabitCommandPlugin;
 use hkb_core::command::CommandPluggable;
 
