@@ -3,6 +3,12 @@ use hkb_core::command::CommandPluggable;
 
 pub struct CommandPlugin;
 
+impl Default for CommandPlugin {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl CommandPlugin {
     pub fn new() -> Self {
         Self {}
