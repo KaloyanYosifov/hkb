@@ -1,5 +1,6 @@
 use std::collections::HashSet;
 use std::fmt::Display;
+use std::str::FromStr;
 
 use log::LevelFilter;
 pub use log::{debug, error, info, log, trace, warn};
@@ -72,7 +73,7 @@ pub fn init(appenders: Option<Vec<AppenderType>>) {
             "{d(%Y-%m-%d %H:%M:%S)} | {({l}):5.5} | [{t}]: {m}{n}"
         }
     };
-    let filter_level = {
+    let default_level = {
         #[cfg(debug_assertions)]
         {
             LevelFilter::Debug
@@ -82,6 +83,10 @@ pub fn init(appenders: Option<Vec<AppenderType>>) {
         {
             LevelFilter::Info
         }
+    };
+    let filter_level: LevelFilter = match std::env::var("HKB_LOG_LEVEL") {
+        Ok(level) => LevelFilter::from_str(&level).unwrap_or(default_level),
+        Err(_) => default_level,
     };
     let mut config = Config::builder();
     let mut root = Root::builder();
