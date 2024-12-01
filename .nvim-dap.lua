@@ -1,12 +1,4 @@
 local dap = require("dap")
-local utils = require("my-config.utils")
-
-
-dap.adapters.lldb = {
-    type = "executable",
-    command = utils.command_path("lldb-vscode"),
-    name = "lldb"
-}
 
 dap.configurations.rust = {
     {
