@@ -211,6 +211,10 @@ impl SimpleDate {
         self.timezone
     }
 
+    pub fn format(&self, format: impl AsRef<str>) -> String {
+        self.date.format(format.as_ref()).to_string()
+    }
+
     #[cfg(not(feature = "chrono"))]
     #[allow(clippy::wrong_self_convention)]
     pub(crate) fn to_chrono_date(&self) -> chrono::NaiveDateTime {
@@ -476,5 +480,11 @@ mod tests {
             "0000-04-14 08:00:00",
             Duration::Year((i32::MAX - 2025) as u32)
         );
+    }
+
+    #[test]
+    fn can_be_formatted() {
+        let date = SimpleDate::parse_from_str("2024-04-14 08:00:00", "%Y-%m-%d %H:%M:%S").unwrap();
+        assert_eq!("2024-04-14", date.format("%Y-%m-%d"));
     }
 }

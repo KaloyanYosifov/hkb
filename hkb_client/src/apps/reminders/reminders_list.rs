@@ -48,8 +48,9 @@ impl RemindersList {
                 duration.to_human_string()
             }
         };
+        let date = reminder.remind_at.format("%d-%m-%Y");
 
-        format!("{} - {}", reminder.note, duration)
+        format!("{} - {} ({})", reminder.note, duration, date)
     }
 
     fn create_reminder_list<'a>(&self, reminders: &[ReminderData], title: &'a str) -> List<'a> {
