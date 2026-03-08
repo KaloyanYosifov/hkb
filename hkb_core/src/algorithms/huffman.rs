@@ -15,10 +15,10 @@ pub struct Huffman;
 impl Huffman {
     pub fn encode(text: &str) -> (HuffmanBinary, HuffmanNode) {
         let mut huffman_values: Vec<HuffmanValue> = Vec::with_capacity(text.len() / 2);
-        let mut occurance_map: HashMap<char, usize> = HashMap::with_capacity(text.len() / 2);
+        let mut occurrence_map: HashMap<char, usize> = HashMap::with_capacity(text.len() / 2);
 
         for c in text.chars() {
-            let index = occurance_map
+            let index = occurrence_map
                 .entry(c)
                 .or_insert_with(|| huffman_values.len() + 1);
             let actual_index = *index - 1;
@@ -26,11 +26,11 @@ impl Huffman {
             if actual_index >= huffman_values.len() {
                 huffman_values.push(HuffmanValue {
                     char: Some(c),
-                    occurance: 0,
+                    occurrence: 0,
                 });
             }
 
-            huffman_values[actual_index].occurance += 1;
+            huffman_values[actual_index].occurrence += 1;
         }
 
         // TODO: Check if we can do this more efficiently without using an intermediate vector
@@ -45,11 +45,11 @@ impl Huffman {
             let el1 = priority_queue.pop().unwrap();
             let el2 = priority_queue.pop().unwrap();
 
-            let occurance = el1.val.occurance + el2.val.occurance;
+            let occurrence = el1.val.occurrence + el2.val.occurrence;
             let node = HuffmanNode::with_nodes(
                 HuffmanValue {
                     char: None,
-                    occurance,
+                    occurrence,
                 },
                 el1,
                 el2,

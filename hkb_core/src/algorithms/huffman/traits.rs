@@ -87,15 +87,15 @@ mod tests {
         let node = HuffmanNode::new(
             HuffmanValue {
                 char: None,
-                occurance: 2,
+                occurrence: 2,
             },
             Some(HuffmanValue {
                 char: Some('a'),
-                occurance: 1,
+                occurrence: 1,
             }),
             Some(HuffmanValue {
                 char: Some('b'),
-                occurance: 1,
+                occurrence: 1,
             }),
         );
 
@@ -109,15 +109,15 @@ mod tests {
         let node = HuffmanNode::new(
             HuffmanValue {
                 char: None,
-                occurance: 2,
+                occurrence: 2,
             },
             Some(HuffmanValue {
                 char: Some('a'),
-                occurance: 1,
+                occurrence: 1,
             }),
             Some(HuffmanValue {
                 char: Some('b'),
-                occurance: 1,
+                occurrence: 1,
             }),
         );
 

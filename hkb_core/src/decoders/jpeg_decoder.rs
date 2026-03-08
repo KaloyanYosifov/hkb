@@ -7,7 +7,7 @@ use thiserror::Error as ThisError;
 
 #[derive(Debug)]
 struct JpegHeader {
-    identifer: String,
+    identifier: String,
     version: String,
     units: u8,
     density: String,
@@ -26,7 +26,7 @@ impl JpegHeader {
         // otherwise we have a thumbnail header
         // which we do not support for now
         if length == 16 {
-            let identifer = String::from_utf8_lossy(&bytes[2..6]).to_string();
+            let identifier = String::from_utf8_lossy(&bytes[2..6]).to_string();
             let version = format!("{}.{}", bytes[7], bytes[8]);
             let units = bytes[7];
 
@@ -37,7 +37,7 @@ impl JpegHeader {
             let thumbnail = format!("{}x{}", bytes[14], bytes[15]);
 
             Some(Self {
-                identifer,
+                identifier,
                 units,
                 version,
                 density,

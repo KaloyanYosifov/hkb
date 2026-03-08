@@ -176,13 +176,7 @@ impl Eq for BoundedValue {}
 
 impl Ord for BoundedValue {
     fn cmp(&self, other: &Self) -> Ordering {
-        if self.val > other.val {
-            std::cmp::Ordering::Greater
-        } else if self.val < other.val {
-            std::cmp::Ordering::Less
-        } else {
-            std::cmp::Ordering::Equal
-        }
+        self.val.cmp(&other.val)
     }
 }
 
@@ -194,16 +188,6 @@ impl PartialOrd for BoundedValue {
 
 impl PartialOrd<BoundValueType> for BoundedValue {
     fn partial_cmp(&self, other: &BoundValueType) -> Option<Ordering> {
-        let order = {
-            if &self.val > other {
-                std::cmp::Ordering::Greater
-            } else if &self.val < other {
-                std::cmp::Ordering::Less
-            } else {
-                std::cmp::Ordering::Equal
-            }
-        };
-
-        Some(order)
+        Some(self.val.cmp(other))
     }
 }

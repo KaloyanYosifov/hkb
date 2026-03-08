@@ -235,7 +235,7 @@ impl Display for SimpleDate {
             .and_utc()
             .to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
 
-        write!(f, "{}", value)
+        write!(f, "{value}")
     }
 }
 

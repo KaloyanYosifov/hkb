@@ -158,7 +158,7 @@ async fn main() {
     let database_file_path = dirs::data_local_dir().unwrap().join("hkb/db");
     init_database(database_file_path.to_str().unwrap(), vec![CORE_MIGRATIONS]).unwrap();
 
-    logger::init(Some(vec![AppenderType::FILE, AppenderType::STDOUT]));
+    logger::init(Some(vec![AppenderType::File, AppenderType::Stdout]));
 
     let server = Server::bind();
 

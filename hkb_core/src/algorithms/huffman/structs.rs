@@ -3,7 +3,7 @@ use std::fmt::Display;
 #[derive(Eq, Clone, Copy, Debug)]
 pub struct HuffmanValue {
     pub char: Option<char>,
-    pub occurance: u64,
+    pub occurrence: u64,
 }
 
 impl PartialEq for HuffmanValue {
@@ -14,13 +14,7 @@ impl PartialEq for HuffmanValue {
 
 impl Ord for HuffmanValue {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        if self.occurance > other.occurance {
-            std::cmp::Ordering::Greater
-        } else if self.occurance < other.occurance {
-            std::cmp::Ordering::Less
-        } else {
-            std::cmp::Ordering::Equal
-        }
+        self.occurrence.cmp(&other.occurrence)
     }
 }
 
@@ -60,10 +54,11 @@ impl HuffmanBinaryValue {
     pub fn to_string_packed(&self) -> String {
         format!("{:0width$b}", self.val, width = self.max_bits as usize)
     }
+}
 
-    #[allow(clippy::inherent_to_string)]
-    pub fn to_string(&self) -> String {
-        format!("{:032b}", self.val)
+impl Display for HuffmanBinaryValue {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:032b}", self.val)
     }
 }
 
@@ -87,13 +82,7 @@ impl PartialEq<HuffmanBinaryValue> for u32 {
 
 impl Ord for HuffmanBinaryValue {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        if self.val > other.val {
-            std::cmp::Ordering::Greater
-        } else if self.val < other.val {
-            std::cmp::Ordering::Less
-        } else {
-            std::cmp::Ordering::Equal
-        }
+        self.val.cmp(&other.val)
     }
 }
 

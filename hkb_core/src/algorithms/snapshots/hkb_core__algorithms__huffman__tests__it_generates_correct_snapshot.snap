@@ -1,6 +1,7 @@
 ---
 source: hkb_core/src/algorithms/huffman.rs
-expression: "HuffmanEncoder::compress(text)"
+expression: "Huffman::encode(text)"
+snapshot_kind: text
 ---
 (
     HuffmanBinary {
@@ -158,28 +159,28 @@ expression: "HuffmanEncoder::compress(text)"
     Node {
         val: HuffmanValue {
             char: None,
-            occurance: 37,
+            occurrence: 37,
         },
         left: Some(
             RefCell {
                 value: Node {
                     val: HuffmanValue {
                         char: None,
-                        occurance: 16,
+                        occurrence: 16,
                     },
                     left: Some(
                         RefCell {
                             value: Node {
                                 val: HuffmanValue {
                                     char: None,
-                                    occurance: 8,
+                                    occurrence: 8,
                                 },
                                 left: Some(
                                     RefCell {
                                         value: Node {
                                             val: HuffmanValue {
                                                 char: None,
-                                                occurance: 4,
+                                                occurrence: 4,
                                             },
                                             left: Some(
                                                 RefCell {
@@ -188,7 +189,7 @@ expression: "HuffmanEncoder::compress(text)"
                                                             char: Some(
                                                                 'h',
                                                             ),
-                                                            occurance: 2,
+                                                            occurrence: 2,
                                                         },
                                                         left: None,
                                                         right: None,
@@ -200,7 +201,7 @@ expression: "HuffmanEncoder::compress(text)"
                                                     value: Node {
                                                         val: HuffmanValue {
                                                             char: None,
-                                                            occurance: 2,
+                                                            occurrence: 2,
                                                         },
                                                         left: Some(
                                                             RefCell {
@@ -209,7 +210,7 @@ expression: "HuffmanEncoder::compress(text)"
                                                                         char: Some(
                                                                             'g',
                                                                         ),
-                                                                        occurance: 1,
+                                                                        occurrence: 1,
                                                                     },
                                                                     left: None,
                                                                     right: None,
@@ -223,7 +224,7 @@ expression: "HuffmanEncoder::compress(text)"
                                                                         char: Some(
                                                                             'f',
                                                                         ),
-                                                                        occurance: 1,
+                                                                        occurrence: 1,
                                                                     },
                                                                     left: None,
                                                                     right: None,
@@ -243,7 +244,7 @@ expression: "HuffmanEncoder::compress(text)"
                                                 char: Some(
                                                     'r',
                                                 ),
-                                                occurance: 4,
+                                                occurrence: 4,
                                             },
                                             left: None,
                                             right: None,
@@ -258,14 +259,14 @@ expression: "HuffmanEncoder::compress(text)"
                             value: Node {
                                 val: HuffmanValue {
                                     char: None,
-                                    occurance: 8,
+                                    occurrence: 8,
                                 },
                                 left: Some(
                                     RefCell {
                                         value: Node {
                                             val: HuffmanValue {
                                                 char: None,
-                                                occurance: 4,
+                                                occurrence: 4,
                                             },
                                             left: Some(
                                                 RefCell {
@@ -274,7 +275,7 @@ expression: "HuffmanEncoder::compress(text)"
                                                             char: Some(
                                                                 'm',
                                                             ),
-                                                            occurance: 2,
+                                                            occurrence: 2,
                                                         },
                                                         left: None,
                                                         right: None,
@@ -286,7 +287,7 @@ expression: "HuffmanEncoder::compress(text)"
                                                     value: Node {
                                                         val: HuffmanValue {
                                                             char: None,
-                                                            occurance: 2,
+                                                            occurrence: 2,
                                                         },
                                                         left: Some(
                                                             RefCell {
@@ -295,7 +296,7 @@ expression: "HuffmanEncoder::compress(text)"
                                                                         char: Some(
                                                                             'H',
                                                                         ),
-                                                                        occurance: 1,
+                                                                        occurrence: 1,
                                                                     },
                                                                     left: None,
                                                                     right: None,
@@ -309,7 +310,7 @@ expression: "HuffmanEncoder::compress(text)"
                                                                         char: Some(
                                                                             'a',
                                                                         ),
-                                                                        occurance: 1,
+                                                                        occurrence: 1,
                                                                     },
                                                                     left: None,
                                                                     right: None,
@@ -327,7 +328,7 @@ expression: "HuffmanEncoder::compress(text)"
                                         value: Node {
                                             val: HuffmanValue {
                                                 char: None,
-                                                occurance: 4,
+                                                occurrence: 4,
                                             },
                                             left: Some(
                                                 RefCell {
@@ -336,7 +337,7 @@ expression: "HuffmanEncoder::compress(text)"
                                                             char: Some(
                                                                 'o',
                                                             ),
-                                                            occurance: 2,
+                                                            occurrence: 2,
                                                         },
                                                         left: None,
                                                         right: None,
@@ -348,7 +349,7 @@ expression: "HuffmanEncoder::compress(text)"
                                                     value: Node {
                                                         val: HuffmanValue {
                                                             char: None,
-                                                            occurance: 2,
+                                                            occurrence: 2,
                                                         },
                                                         left: Some(
                                                             RefCell {
@@ -357,7 +358,7 @@ expression: "HuffmanEncoder::compress(text)"
                                                                         char: Some(
                                                                             'u',
                                                                         ),
-                                                                        occurance: 1,
+                                                                        occurrence: 1,
                                                                     },
                                                                     left: None,
                                                                     right: None,
@@ -371,7 +372,7 @@ expression: "HuffmanEncoder::compress(text)"
                                                                         char: Some(
                                                                             'k',
                                                                         ),
-                                                                        occurance: 1,
+                                                                        occurrence: 1,
                                                                     },
                                                                     left: None,
                                                                     right: None,
@@ -395,14 +396,14 @@ expression: "HuffmanEncoder::compress(text)"
                 value: Node {
                     val: HuffmanValue {
                         char: None,
-                        occurance: 21,
+                        occurrence: 21,
                     },
                     left: Some(
                         RefCell {
                             value: Node {
                                 val: HuffmanValue {
                                     char: None,
-                                    occurance: 8,
+                                    occurrence: 8,
                                 },
                                 left: Some(
                                     RefCell {
@@ -411,7 +412,7 @@ expression: "HuffmanEncoder::compress(text)"
                                                 char: Some(
                                                     't',
                                                 ),
-                                                occurance: 4,
+                                                occurrence: 4,
                                             },
                                             left: None,
                                             right: None,
@@ -423,7 +424,7 @@ expression: "HuffmanEncoder::compress(text)"
                                         value: Node {
                                             val: HuffmanValue {
                                                 char: None,
-                                                occurance: 4,
+                                                occurrence: 4,
                                             },
                                             left: Some(
                                                 RefCell {
@@ -432,7 +433,7 @@ expression: "HuffmanEncoder::compress(text)"
                                                             char: Some(
                                                                 'i',
                                                             ),
-                                                            occurance: 2,
+                                                            occurrence: 2,
                                                         },
                                                         left: None,
                                                         right: None,
@@ -446,7 +447,7 @@ expression: "HuffmanEncoder::compress(text)"
                                                             char: Some(
                                                                 'c',
                                                             ),
-                                                            occurance: 2,
+                                                            occurrence: 2,
                                                         },
                                                         left: None,
                                                         right: None,
@@ -464,7 +465,7 @@ expression: "HuffmanEncoder::compress(text)"
                             value: Node {
                                 val: HuffmanValue {
                                     char: None,
-                                    occurance: 13,
+                                    occurrence: 13,
                                 },
                                 left: Some(
                                     RefCell {
@@ -473,7 +474,7 @@ expression: "HuffmanEncoder::compress(text)"
                                                 char: Some(
                                                     'e',
                                                 ),
-                                                occurance: 6,
+                                                occurrence: 6,
                                             },
                                             left: None,
                                             right: None,
@@ -485,7 +486,7 @@ expression: "HuffmanEncoder::compress(text)"
                                         value: Node {
                                             val: HuffmanValue {
                                                 char: None,
-                                                occurance: 7,
+                                                occurrence: 7,
                                             },
                                             left: Some(
                                                 RefCell {
@@ -494,7 +495,7 @@ expression: "HuffmanEncoder::compress(text)"
                                                             char: Some(
                                                                 ' ',
                                                             ),
-                                                            occurance: 3,
+                                                            occurrence: 3,
                                                         },
                                                         left: None,
                                                         right: None,
@@ -506,7 +507,7 @@ expression: "HuffmanEncoder::compress(text)"
                                                     value: Node {
                                                         val: HuffmanValue {
                                                             char: None,
-                                                            occurance: 4,
+                                                            occurrence: 4,
                                                         },
                                                         left: Some(
                                                             RefCell {
@@ -515,7 +516,7 @@ expression: "HuffmanEncoder::compress(text)"
                                                                         char: Some(
                                                                             'n',
                                                                         ),
-                                                                        occurance: 2,
+                                                                        occurrence: 2,
                                                                     },
                                                                     left: None,
                                                                     right: None,
@@ -529,7 +530,7 @@ expression: "HuffmanEncoder::compress(text)"
                                                                         char: Some(
                                                                             'l',
                                                                         ),
-                                                                        occurance: 2,
+                                                                        occurrence: 2,
                                                                     },
                                                                     left: None,
                                                                     right: None,

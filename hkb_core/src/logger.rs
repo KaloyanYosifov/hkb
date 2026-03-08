@@ -14,19 +14,19 @@ use log4rs::Config;
 
 #[derive(PartialEq, Eq, Hash)]
 pub enum AppenderType {
-    FILE,
-    STDOUT,
+    File,
+    Stdout,
 }
 
 impl Display for AppenderType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let value = match self {
-            AppenderType::FILE => "file",
-            AppenderType::STDOUT => "stdout",
+            AppenderType::File => "file",
+            AppenderType::Stdout => "stdout",
         }
         .to_owned();
 
-        write!(f, "{}", value)
+        write!(f, "{value}")
     }
 }
 
@@ -58,7 +58,7 @@ fn init_stdout_appender(pattern: &str) -> ConsoleAppender {
 
 pub fn init(appenders: Option<Vec<AppenderType>>) {
     let appenders = appenders
-        .unwrap_or_else(|| vec![AppenderType::FILE])
+        .unwrap_or_else(|| vec![AppenderType::File])
         .into_iter()
         .collect::<HashSet<_>>();
 
@@ -93,8 +93,8 @@ pub fn init(appenders: Option<Vec<AppenderType>>) {
 
     for appender in appenders {
         let appender_to_build: Box<dyn Append> = match appender {
-            AppenderType::FILE => Box::new(init_file_appender(log_line_pattern)),
-            AppenderType::STDOUT => Box::new(init_stdout_appender(log_line_pattern)),
+            AppenderType::File => Box::new(init_file_appender(log_line_pattern)),
+            AppenderType::Stdout => Box::new(init_stdout_appender(log_line_pattern)),
         };
 
         config =

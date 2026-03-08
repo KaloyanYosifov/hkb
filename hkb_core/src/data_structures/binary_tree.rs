@@ -21,13 +21,7 @@ impl<T: Constraints> PartialEq for Node<T> {
 
 impl<T: Constraints> Ord for Node<T> {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        if self.val > other.val {
-            std::cmp::Ordering::Greater
-        } else if self.val < other.val {
-            std::cmp::Ordering::Less
-        } else {
-            std::cmp::Ordering::Equal
-        }
+        self.val.cmp(&other.val)
     }
 }
 
@@ -62,11 +56,11 @@ impl<T: Constraints> Node<T> {
     }
 
     pub fn get_left(&self) -> Option<NodeRef<T>> {
-        self.left.as_ref().map(|node| node.clone())
+        self.left.clone()
     }
 
     pub fn get_right(&self) -> Option<NodeRef<T>> {
-        self.right.as_ref().map(|node| node.clone())
+        self.right.clone()
     }
 
     pub fn height(&self) -> usize {

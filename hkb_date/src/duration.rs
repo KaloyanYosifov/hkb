@@ -65,7 +65,7 @@ impl Display for Duration {
             Duration::Year(v) => format!("Year-{v}"),
         };
 
-        write!(f, "{}", value)
+        write!(f, "{value}")
     }
 }
 
