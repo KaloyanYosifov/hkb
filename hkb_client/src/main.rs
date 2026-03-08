@@ -120,14 +120,16 @@ async fn main() -> RenderResult {
     while !should_quit {
         while event::poll(Duration::ZERO).unwrap() {
             if let Ok(event) = event::read() {
-                if let Event::Key(event) = event { match event.code {
-                    KeyCode::Char(c) => {
-                        should_quit =
-                            c == 'c' && event.modifiers.contains(event::KeyModifiers::CONTROL)
+                if let Event::Key(event) = event {
+                    match event.code {
+                        KeyCode::Char(c) => {
+                            should_quit =
+                                c == 'c' && event.modifiers.contains(event::KeyModifiers::CONTROL)
+                        }
+                        KeyCode::Esc => app_state::set_editing(false),
+                        _ => {}
                     }
-                    KeyCode::Esc => app_state::set_editing(false),
-                    _ => {}
-                } }
+                }
 
                 events::push(event);
             }

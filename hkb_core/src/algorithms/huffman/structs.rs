@@ -52,13 +52,7 @@ impl HuffmanBinaryValue {
     }
 
     pub fn from_string(value: impl AsRef<str>) -> Self {
-        let number = {
-            if let Ok(num) = u32::from_str_radix(value.as_ref(), 2) {
-                num
-            } else {
-                0
-            }
-        };
+        let number = u32::from_str_radix(value.as_ref(), 2).unwrap_or(0);
 
         Self::new(number, value.as_ref().len() as u32)
     }

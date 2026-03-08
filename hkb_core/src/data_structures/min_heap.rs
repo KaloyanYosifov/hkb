@@ -1,17 +1,17 @@
-/// Min heap
-/// 1. Always the most minimum value is on top
-/// 2. We have a trait which returns an integer value
-/// 3. The trait will be dynamic and boxed
-///
-/// Implementation
-/// 1. Insert:
-///     - Put the value in the end
-///     - Bubble up
-/// 2. Pop
-///     - Keep the value we are going to return
-///     - Swap with the bottom most element
-///     - remove it from the last element
-///     - Start from root and heapify to fix the top minimum value
+// Min heap
+// 1. Always the most minimum value is on top
+// 2. We have a trait which returns an integer value
+// 3. The trait will be dynamic and boxed
+//
+// Implementation
+// 1. Insert:
+//     - Put the value in the end
+//     - Bubble up
+// 2. Pop
+//     - Keep the value we are going to return
+//     - Swap with the bottom most element
+//     - remove it from the last element
+//     - Start from root and heapify to fix the top minimum value
 
 // TODO:
 // Maybe we can do traits support here and a user can handle any internal obj they want to keep

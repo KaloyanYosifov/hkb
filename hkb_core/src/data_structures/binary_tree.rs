@@ -70,18 +70,18 @@ impl<T: Constraints> Node<T> {
     }
 
     pub fn height(&self) -> usize {
-        self.height_recursive(self)
+        Self::height_recursive(self)
     }
 
-    fn height_recursive(&self, node: &Node<T>) -> usize {
+    fn height_recursive(node: &Node<T>) -> usize {
         match (node.get_left(), node.get_right()) {
             (Some(left), Some(right)) => {
-                let left_height = self.height_recursive(&left.borrow());
-                let right_height = self.height_recursive(&right.borrow());
+                let left_height = Self::height_recursive(&left.borrow());
+                let right_height = Self::height_recursive(&right.borrow());
                 1 + std::cmp::max(left_height, right_height)
             }
-            (Some(left), None) => 1 + self.height_recursive(&left.borrow()),
-            (None, Some(right)) => 1 + self.height_recursive(&right.borrow()),
+            (Some(left), None) => 1 + Self::height_recursive(&left.borrow()),
+            (None, Some(right)) => 1 + Self::height_recursive(&right.borrow()),
             (None, None) => 1,
         }
     }
