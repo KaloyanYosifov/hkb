@@ -1,0 +1,6 @@
+CREATE TABLE IF NOT EXISTS reminders (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    note TEXT NOT NULL,
+    remind_at TEXT NOT NULL,
+    created_at TEXT NOT NULL
+);

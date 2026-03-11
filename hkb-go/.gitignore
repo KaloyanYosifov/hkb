@@ -1,0 +1,6 @@
+bin/
+__log/
+*.sqlite
+*.sock
+vendor/
+.DS_Store
