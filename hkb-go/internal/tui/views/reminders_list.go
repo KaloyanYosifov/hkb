@@ -48,8 +48,10 @@ func NewRemindersListModel(repo storage.Repository) RemindersListModel {
 	startOfDay := now.StartOfDay()
 	endOfDay := now.EndOfDay()
 
+	tomorrow := now.AddDuration(dateutil.Day(1)).StartOfDay()
+
 	today, _ := repo.FetchReminders(storage.RemindAtBetween(startOfDay, endOfDay))
-	upcoming, _ := repo.FetchReminders(storage.RemindAtGe(endOfDay))
+	upcoming, _ := repo.FetchReminders(storage.RemindAtGe(tomorrow))
 
 	total := len(today) + len(upcoming)
 	maxIdx := 0
@@ -108,58 +110,61 @@ func (m *RemindersListModel) tryDelete() {
 }
 
 func (m RemindersListModel) View(width, height int) string {
-	var b strings.Builder
+	todayMinLines := height * 30 / 100
+	if todayMinLines < 4 {
+		todayMinLines = 4
+	}
 
-	todayHeight := height * 30 / 100
-	upcomingHeight := height - todayHeight
-
-	b.WriteString(sectionTitleStyle.Render("Today Reminders"))
-	b.WriteString("\n")
+	var todaySection strings.Builder
+	todaySection.WriteString(sectionTitleStyle.Render("Today Reminders"))
+	todaySection.WriteString("\n")
+	todayLines := 1
 
 	if len(m.today) == 0 {
-		b.WriteString(hintStyle.Render("  No reminders for today"))
-		b.WriteString("\n")
+		todaySection.WriteString(hintStyle.Render("  No reminders for today"))
+		todaySection.WriteString("\n")
+		todayLines++
 	} else {
 		for i, r := range m.today {
 			line := formatReminder(r)
 			if i == m.selected.Val() {
-				b.WriteString(selectedStyle.Width(width).Render(line))
+				todaySection.WriteString(selectedStyle.Width(width).Render(line))
 			} else {
-				b.WriteString(normalItemStyle.Render(line))
+				todaySection.WriteString(normalItemStyle.Render(line))
 			}
-			b.WriteString("\n")
+			todaySection.WriteString("\n")
+			todayLines++
 		}
 	}
 
-	for b.Len() < todayHeight*width/2 {
-		b.WriteString("\n")
+	for todayLines < todayMinLines {
+		todaySection.WriteString("\n")
+		todayLines++
 	}
 
-	b.WriteString(sectionTitleStyle.Render("Upcoming Reminders"))
-	b.WriteString("\n")
+	var upcomingSection strings.Builder
+	upcomingSection.WriteString(sectionTitleStyle.Render("Upcoming Reminders"))
+	upcomingSection.WriteString("\n")
 
 	if len(m.upcoming) == 0 {
-		b.WriteString(hintStyle.Render("  No upcoming reminders"))
-		b.WriteString("\n")
+		upcomingSection.WriteString(hintStyle.Render("  No upcoming reminders"))
+		upcomingSection.WriteString("\n")
 	} else {
 		for i, r := range m.upcoming {
 			globalIdx := len(m.today) + i
 			line := formatReminder(r)
 			if globalIdx == m.selected.Val() {
-				b.WriteString(selectedStyle.Width(width).Render(line))
+				upcomingSection.WriteString(selectedStyle.Width(width).Render(line))
 			} else {
-				b.WriteString(normalItemStyle.Render(line))
+				upcomingSection.WriteString(normalItemStyle.Render(line))
 			}
-			b.WriteString("\n")
+			upcomingSection.WriteString("\n")
 		}
 	}
 
-	_ = upcomingHeight
+	hints := hintStyle.Render("  j/k: navigate  a: create  dd: delete")
 
-	b.WriteString("\n")
-	b.WriteString(hintStyle.Render("  j/k: navigate  a: create  dd: delete"))
-
-	return b.String()
+	return todaySection.String() + upcomingSection.String() + "\n" + hints
 }
 
 func formatReminder(r storage.ReminderData) string {

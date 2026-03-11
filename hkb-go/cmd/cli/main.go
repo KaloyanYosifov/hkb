@@ -79,6 +79,7 @@ func cmdList() {
 	now := dateutil.Now()
 	startOfDay := now.StartOfDay()
 	endOfDay := now.EndOfDay()
+	tomorrow := now.AddDuration(dateutil.Day(1)).StartOfDay()
 
 	today, err := repo.FetchReminders(storage.RemindAtBetween(startOfDay, endOfDay))
 	if err != nil {
@@ -86,7 +87,7 @@ func cmdList() {
 		os.Exit(1)
 	}
 
-	upcoming, err := repo.FetchReminders(storage.RemindAtGe(endOfDay))
+	upcoming, err := repo.FetchReminders(storage.RemindAtGe(tomorrow))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		os.Exit(1)

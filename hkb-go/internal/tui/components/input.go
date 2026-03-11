@@ -93,6 +93,16 @@ func (s *InputState) updateNormalMode(msg tea.KeyMsg) tea.Cmd {
 	return nil
 }
 
+func (s *InputState) insertChar(ch rune) {
+	runes := []rune(s.Buffer)
+	newRunes := make([]rune, 0, len(runes)+1)
+	newRunes = append(newRunes, runes[:s.cursorPos]...)
+	newRunes = append(newRunes, ch)
+	newRunes = append(newRunes, runes[s.cursorPos:]...)
+	s.Buffer = string(newRunes)
+	s.cursorPos++
+}
+
 func (s *InputState) updateInsertMode(msg tea.KeyMsg) tea.Cmd {
 	switch msg.Type {
 	case tea.KeyRunes:
@@ -103,6 +113,8 @@ func (s *InputState) updateInsertMode(msg tea.KeyMsg) tea.Cmd {
 		newRunes = append(newRunes, runes[s.cursorPos:]...)
 		s.Buffer = string(newRunes)
 		s.cursorPos += len(msg.Runes)
+	case tea.KeySpace:
+		s.insertChar(' ')
 	case tea.KeyBackspace:
 		if s.cursorPos > 0 {
 			runes := []rune(s.Buffer)

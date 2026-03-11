@@ -146,44 +146,36 @@ func (m *RemindersCreateModel) trySubmit() {
 }
 
 func (m RemindersCreateModel) View(width, height int) string {
-	var b strings.Builder
-
-	padding := height / 4
-	for i := 0; i < padding; i++ {
-		b.WriteString("\n")
-	}
-
 	formWidth := width * 60 / 100
 	if formWidth < 40 {
 		formWidth = 40
 	}
-	leftPad := (width - formWidth) / 2
-	indent := strings.Repeat(" ", leftPad)
+	if formWidth > width {
+		formWidth = width
+	}
 
-	b.WriteString(indent)
+	var b strings.Builder
+
 	b.WriteString(formTitleStyle.Width(formWidth).Render("Create Reminder"))
 	b.WriteString("\n\n")
 
-	b.WriteString(indent)
 	b.WriteString(m.titleInput.View(formWidth))
 	b.WriteString("\n\n")
 
-	b.WriteString(indent)
 	b.WriteString(m.dateInput.View(formWidth))
 	b.WriteString("\n\n")
 
 	if m.errorMsg != "" {
-		b.WriteString(indent)
 		b.WriteString(errorStyle.Render(m.errorMsg))
 		b.WriteString("\n\n")
 	}
 
-	b.WriteString(indent)
 	b.WriteString(m.submitBtn.View())
 	b.WriteString("\n\n")
 
-	b.WriteString(indent)
 	b.WriteString(lipgloss.NewStyle().Foreground(lipgloss.Color("8")).Render("Tab/Shift+Tab: cycle fields  Esc: cancel"))
 
-	return b.String()
+	form := b.String()
+
+	return lipgloss.Place(width, height, lipgloss.Center, lipgloss.Center, form)
 }
